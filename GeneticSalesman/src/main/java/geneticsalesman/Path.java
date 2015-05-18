@@ -6,7 +6,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+
+import scala.Array;
 
 import com.google.common.primitives.Ints;
 
@@ -105,23 +108,54 @@ public class Path implements Serializable {
 	}
 
 	public Path mutate(double[][] distances) {
-		int modifiablePathLength = path.length-1; //0 position remains unchanged
-		int swapLength = (int)(Math.random()*(int)(modifiablePathLength/2)+1);
-		int swap1Position = (int)(Math.random()*modifiablePathLength+1);
-		int numPossibleSwap2StartPositions = modifiablePathLength-(2*swapLength-1);
-		int swap2Position = swap1Position + swapLength + (int)(Math.random()*numPossibleSwap2StartPositions);
-		if(swap2Position >= path.length) 
-			swap2Position = swap2Position - modifiablePathLength;
-		for(int i = 0; i<swapLength; i++) {
-			int temp = path[swap1Position];
-			path[swap1Position++] = path[swap2Position];
-			path[swap2Position++] = temp;
-			if(swap1Position == path.length) 
-				swap1Position = swap1Position - modifiablePathLength;
-			if(swap2Position == path.length) 
-				swap2Position = swap2Position - modifiablePathLength;
+		Random r=new Random();
+		int[] newPath = Arrays.copyOf(path, path.length);
+		double newDistance = distance;
+		
+		if(!currentElite && r.nextDouble()<0.6) {
+			//swap sequences
+			if(r.nextBoolean()) {
+				int swapLength = r.nextInt(path.length/2)+1;
+				int swap1Position = r.nextInt(path.length);
+				int numPossibleSwap2StartPositions = path.length-(2*swapLength-1);
+				int swap2Position = (swap1Position + swapLength + r.nextInt(numPossibleSwap2StartPositions)) % path.length;
+
+				for(int i = 0; i<swapLength; i++) {
+					int temp = newPath[(swap1Position+i)%path.length];
+					newPath[(swap1Position+i)%path.length] = newPath[(swap2Position+i)%path.length];
+					newPath[(swap2Position+i)%path.length] = temp;
+				}
+				
+			}
+			//swap single pairs
+			else {	
+				do {
+					int pos1 = r.nextInt(newPath.length);
+					int pos2 = r.nextInt(newPath.length-1);
+					if(pos2 >= pos1)
+						pos2++;
+					int temp = newPath[pos1];
+					newPath[pos1] = newPath[pos2];
+					newPath[pos2] = temp;
+				} while(r.nextDouble()<0.4);
+			}
+			
+			newPath = rotate(newPath);
+			newDistance = calculateLength(newPath, distances);
 		}
-		return new Path(path, calculateLength(path, distances));
+		return new Path(newPath, newDistance);
+	}
+
+	private int[] rotate(int[] path) {
+		if(path[0] == 0) 
+			return path;
+		int[] newPath = new int[path.length];
+		int zeroPos = 0;
+		while(path[zeroPos] != 0)
+			zeroPos++;
+		System.arraycopy(path, zeroPos, newPath, 0, path.length-zeroPos);
+		System.arraycopy(path, 0 , newPath, path.length-zeroPos, zeroPos);
+		return newPath;
 	}
 
 	public boolean isCurrentElite() {
