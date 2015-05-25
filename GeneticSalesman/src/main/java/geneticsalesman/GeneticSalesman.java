@@ -61,8 +61,10 @@ public class GeneticSalesman {
 	    	}
 	    	
 	    	System.out.println("Found:\t"+globalBest);
-	    	if(problem.getOptimal()!=null)
+	    	if(problem.getOptimal()!=null) {
 	    		System.out.println("Opt.:\t"+problem.getOptimal());
+	    		System.out.println("Found Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()));
+	    	}
 	    	//export result
 	    	if(kmlPath != null)
 	    		Helper.KMLExport.exportPath(globalBest, problem.getCities(), kmlPath);
