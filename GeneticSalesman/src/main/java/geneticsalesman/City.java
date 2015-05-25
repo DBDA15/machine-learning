@@ -31,13 +31,6 @@ public class City implements Serializable {
 	}
 
 	public double distanceTo(City otherCity) {
-	    /*double dLat = Math.toRadians(otherCity.latitude-this.latitude);
-	    double dLng = Math.toRadians(otherCity.longitude-this.longitude);
-	    double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-	               Math.cos(Math.toRadians(this.latitude)) * Math.cos(Math.toRadians(otherCity.latitude)) *
-	               Math.sin(dLng/2) * Math.sin(dLng/2);
-	    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-	    return EARTH_RADIUS * c;*/
 		double q1=Math.cos(Math.toRadians(otherCity.longitude-this.longitude));
 		double q2=Math.cos(Math.toRadians(otherCity.latitude-this.latitude));
 		double q3=Math.cos(Math.toRadians(otherCity.latitude+this.latitude));

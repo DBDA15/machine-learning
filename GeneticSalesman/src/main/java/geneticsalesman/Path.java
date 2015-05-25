@@ -121,7 +121,7 @@ public class Path implements Serializable {
 			else {
 				viceVersaMutation(r, newPath);
 			}
-			newPath = rotate(newPath);
+			newPath = normalize(newPath);
 			newDistance = calculateLength(newPath, distances);
 		}
 		return new Path(newPath, newDistance);
@@ -173,15 +173,25 @@ public class Path implements Serializable {
 		}
 	}
 
-	private static int[] rotate(int[] path) {
-		if(path[0] == 0) 
-			return path;
-		int[] newPath = new int[path.length];
-		int zeroPos = 0;
-		while(path[zeroPos] != 0)
-			zeroPos++;
-		System.arraycopy(path, zeroPos, newPath, 0, path.length-zeroPos);
-		System.arraycopy(path, 0 , newPath, path.length-zeroPos, zeroPos);
+	private static int[] normalize(int[] path) {
+		int[] newPath=path;
+		//rotate
+		if(path[0] != 0) { 
+			newPath = new int[path.length];
+			int zeroPos = 0;
+			while(path[zeroPos] != 0)
+				zeroPos++;
+			System.arraycopy(path, zeroPos, newPath, 0, path.length-zeroPos);
+			System.arraycopy(path, 0 , newPath, path.length-zeroPos, zeroPos);
+		}
+		
+		//reverse if required so that p[1]<p[length-1]
+		if(newPath[1]>newPath[path.length-1]) {
+			path=newPath;
+			newPath=new int[path.length];
+			for(int i=1;i<path.length;i++)
+				newPath[i]=path[path.length-i];
+		}
 		return newPath;
 	}
 
@@ -194,7 +204,7 @@ public class Path implements Serializable {
 	}
 
 	public static Path createNormalizedPath(int[] p, double[][] distances) {
-		int[] r = rotate(p);
+		int[] r = normalize(p);
 		return new Path(r, calculateLength(r, distances));
 	}
 	
