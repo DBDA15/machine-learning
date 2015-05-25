@@ -81,6 +81,7 @@ public interface Helper {
 					StringBuilder optimumCoordinates = new StringBuilder();
 					for(int id : problem.getOptimal().getIDs()) 
 						addCity(cities[id], null, optimumCoordinates);
+					addCity(cities[0], null, optimumCoordinates); 
 					addPath(docTag, "optimum", optimumCoordinates);
 				}
 				
