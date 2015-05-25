@@ -1,14 +1,18 @@
 package geneticsalesman;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
@@ -30,6 +34,7 @@ public class Evolution {
 			@SuppressWarnings("null")
 			@Override
 			public Iterable<Path> call(Iterator<Path> t) throws Exception {
+					
 				//collect paths to rangemap that maps probability to path
 				Path elite=null;
 				RangeMap<Double, Path> list=TreeRangeMap.create();
@@ -60,7 +65,7 @@ public class Evolution {
 				}
 				
 				//add elite at the end
-				elite.setCurrentElite(true);
+				elite.setMarked(true);
 				nextGeneration.add(elite);
 							
 				return nextGeneration;
@@ -81,6 +86,54 @@ public class Evolution {
 		}));
 		
 		return generation;
+	}
+
+	public static JavaRDD<Path> tournamentShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
+		generation=generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
+			@Override
+			public Iterable<Path> call(Iterator<Path> it) throws Exception {
+				//collect paths to rangemap that maps probability to path
+				List<Path> l=Lists.newArrayList(it);
+				Path elite=null;
+				RangeMap<Double, Path> list=TreeRangeMap.create();
+				double probabilityCounter=0;
+				
+				for(Path p:l) {
+					if(elite==null || p.getLength()<elite.getLength())
+						elite=p;
+					
+					double prob=1000/p.getLength();
+					list.put(Range.closed(probabilityCounter, probabilityCounter+prob), p);
+					probabilityCounter+=prob;
+				}
+				
+				//select some
+				Random r=new Random();
+				for(int i=0;i<5;i++)
+					list.get(r.nextDouble()*probabilityCounter).setMarked(true);
+				
+				return l;
+			}
+		}).cache();
+		
+		int numberOfPartitions=generation.partitions().size();
+		
+		List<Path> selected = generation.filter(new Function<Path, Boolean>() {
+			@Override
+			public Boolean call(Path v1) throws Exception {
+				return v1.isMarked();
+			}
+		}).collect();
+		
+		Collections.shuffle(selected);
+		for(Path p:selected)
+			p.setMarked(false);
+		return generation.filter(new Function<Path, Boolean>() {
+			@Override
+			public Boolean call(Path v1) throws Exception {
+				return !v1.isMarked();
+			}
+		}).union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
 	} 
 	
 	/**public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final double[][] distances, int numberOfCities) {

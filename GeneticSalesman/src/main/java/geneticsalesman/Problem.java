@@ -17,8 +17,9 @@ public class Problem {
 	    citiesList=null;
 	    distances=new double[cities.length][cities.length];
 	    for(int i=0;i<cities.length;i++) {
-	    	for(int j=0;j<cities.length;j++) {
+	    	for(int j=i;j<cities.length;j++) {
 	    		distances[i][j]=cities[i].distanceTo(cities[j]);
+	    		distances[j][i]=distances[i][j];
 	    	}
 	    }
 	    

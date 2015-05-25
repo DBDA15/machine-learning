@@ -33,8 +33,8 @@ public class InputParser {
 	    			if(parts.length==3) {
 		    			double x=Double.parseDouble(parts[1]);
 		    			double y=Double.parseDouble(parts[2]);
-		    			double longitude=((int)x + 5.0 * (x-(int)x)/ 3.0);
-		    			double latitude=((int)y + 5.0 * (y-(int)y)/ 3.0);
+		    			double latitude=((int)x + 5.0 * (x-(int)x)/ 3.0);
+		    			double longitude=((int)y + 5.0 * (y-(int)y)/ 3.0);
 		    			
 		    			City c=new City(id++, parts[0], longitude, latitude);
 		    			nameIdMap.put(c.getName(), c.getId());

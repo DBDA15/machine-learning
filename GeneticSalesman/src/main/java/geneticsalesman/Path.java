@@ -14,7 +14,7 @@ import com.google.common.primitives.Ints;
 public class Path implements Serializable {
 	private final int[] path;
 	private double distance;
-	private boolean currentElite;
+	private boolean marked;
 	
 	Path(int[] path, double distance) {
 		this.path=path;
@@ -112,7 +112,7 @@ public class Path implements Serializable {
 		int[] newPath = Arrays.copyOf(path, path.length);
 		double newDistance = distance;
 		
-		if(!currentElite && r.nextDouble()<0.7) {
+		while(!marked && r.nextDouble()<0.6) {
 			double modificationDecider = r.nextDouble();
 			if(modificationDecider<0.33) {
 				swapSequenceMutation(r, newPath);	
@@ -124,8 +124,8 @@ public class Path implements Serializable {
 				viceVersaMutation(r, newPath);
 			}
 			newPath = normalize(newPath);
-			newDistance = calculateLength(newPath, distances);
 		}
+		newDistance = calculateLength(newPath, distances);
 		return new Path(newPath, newDistance);
 	}
 
@@ -151,15 +151,13 @@ public class Path implements Serializable {
 	}
 
 	private void swapSinglePairMutation(Random r, int[] newPath) {
-		do {
-			int pos1 = r.nextInt(newPath.length);
-			int pos2 = r.nextInt(newPath.length-1);
-			if(pos2 >= pos1)
-				pos2++;
-			int temp = newPath[pos1];
-			newPath[pos1] = newPath[pos2];
-			newPath[pos2] = temp;
-		} while(r.nextDouble()<0.4);
+		int pos1 = r.nextInt(newPath.length);
+		int pos2 = r.nextInt(newPath.length-1);
+		if(pos2 >= pos1)
+			pos2++;
+		int temp = newPath[pos1];
+		newPath[pos1] = newPath[pos2];
+		newPath[pos2] = temp;
 	}
 
 	private void swapSequenceMutation(Random r, int[] newPath) {
@@ -197,12 +195,12 @@ public class Path implements Serializable {
 		return newPath;
 	}
 
-	public boolean isCurrentElite() {
-		return currentElite;
+	public boolean isMarked() {
+		return marked;
 	}
 	
-	public void setCurrentElite(boolean currentElite) {
-		this.currentElite = currentElite;
+	public void setMarked(boolean marked) {
+		this.marked = marked;
 	}
 
 	public static Path createNormalizedPath(int[] p, double[][] distances) {

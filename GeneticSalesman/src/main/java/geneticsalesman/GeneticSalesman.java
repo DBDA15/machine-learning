@@ -10,7 +10,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 public class GeneticSalesman {
 	
 	private final static int QUICK_GENERATIONS = 20;
-	private final static int STOP_AFTER_UNCHANGED_GENERATIONS = 200;
+	private final static double STOP_WHEN_GOOD_ENOUGH = 0.99;
+	private final static boolean TOURNAMENT_SHUFFLE = true;
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 	    // get job parameters
@@ -28,9 +29,10 @@ public class GeneticSalesman {
 	    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 	    	Path globalBest = null;
 	    	int generationsWithoutChangeCounter=0;
+	    	long time=System.nanoTime();
 	    	
 	    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
-	    	for(int i=0;generationsWithoutChangeCounter<STOP_AFTER_UNCHANGED_GENERATIONS;i++) {
+	    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
 	    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
 	    		
 	    		//MINOR GENERATION LOOP IS ONLY BUILDING A PLAN THAT IS EXECUTED ONCE 
@@ -43,10 +45,13 @@ public class GeneticSalesman {
 			    	generation = Evolution.mutate(generation, problem.getDistances());
 	    		}
 	    		
-	    		//TODO test if global shuffle is better worse than some kind of 
-	    		generation=generation.coalesce(generation.partitions().size(), true);
+	    		if(TOURNAMENT_SHUFFLE) {
+	    			generation=Evolution.tournamentShuffle(generation, ctx);
+	    		}
+	    		else
+	    			generation=generation.coalesce(generation.partitions().size(), true);
 	    		
-	    		generation.cache();
+	    		generation=generation.cache();
 	    		
 	    		Path best=generation.min(Path.COMPARATOR);
 	    		
@@ -56,7 +61,7 @@ public class GeneticSalesman {
 	    			generationsWithoutChangeCounter+=QUICK_GENERATIONS;
 	    		
 	    		globalBest = best;
-	    		System.out.println("\tElite:\t"+best);
+	    		System.out.println("\tElite:\t"+best+" ("+(int)(problem.getOptimal().getLength()/globalBest.getLength()*100)+")");
 	    	}
 	    	
 	    	System.out.println("Found:\t"+globalBest);
@@ -64,6 +69,7 @@ public class GeneticSalesman {
 	    		System.out.println("Opt.:\t"+problem.getOptimal());
 	    		System.out.println("Found Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()));
 	    	}
+	    	System.out.println("Required:\t"+((System.nanoTime()-time)/1000000l)+" ms");
 	    	//export result
 	    	if(kmlPath != null)
 	    		Helper.KMLExport.exportPath(globalBest, problem, kmlPath);
