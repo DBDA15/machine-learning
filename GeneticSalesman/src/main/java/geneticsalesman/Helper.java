@@ -72,7 +72,7 @@ public interface Helper {
 				for(int id : path.getIDs()) 
 					addCity(cities[id], docTag, lineCoordinates);
 				//close circle
-				addCity(cities[0], docTag, lineCoordinates); 	
+				addCity(cities[0], null, lineCoordinates); 	
 				
 				//add path
 				addPath(docTag, "found", lineCoordinates);
@@ -81,7 +81,7 @@ public interface Helper {
 					StringBuilder optimumCoordinates = new StringBuilder();
 					for(int id : problem.getOptimal().getIDs()) 
 						addCity(cities[id], null, optimumCoordinates);
-					addCity(cities[0], null, optimumCoordinates); 
+					addCity(cities[0], null, lineCoordinates); 
 					addPath(docTag, "optimum", optimumCoordinates);
 				}
 				
