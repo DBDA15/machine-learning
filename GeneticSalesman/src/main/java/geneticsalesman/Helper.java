@@ -1,15 +1,15 @@
 package geneticsalesman;
 
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.spark.api.java.function.Function2;
-import org.github.power.io.Out;
 
 import com.mycila.xmltool.XMLDoc;
-import com.mycila.xmltool.XMLDocBuilder;
 import com.mycila.xmltool.XMLTag;
 
 public interface Helper {
@@ -75,7 +75,7 @@ public interface Helper {
 		    			.addTag("coordinates")
 		    				.setText(lineCoordinates.toString());
 				
-			try(BufferedWriter out = Out.file(filename).fromWriter(StandardCharsets.UTF_8)) {
+			try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8))) {
 				out.write(xml.toString());
 			}
 		}

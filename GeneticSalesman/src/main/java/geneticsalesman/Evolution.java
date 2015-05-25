@@ -15,7 +15,7 @@ import com.google.common.collect.TreeRangeMap;
 
 public class Evolution {
 	
-	private static final int POPULATION_SIZE=5000;
+	private static final int POPULATION_SIZE=10000;
 
 	public static List<Path> generateRandomGeneration(int numberOfCities, double[][] distances) {
 		ArrayList<Path> generation=new ArrayList<>(POPULATION_SIZE);

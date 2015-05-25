@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
@@ -14,6 +15,9 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 public class GeneticSalesman {
+	
+	private final static int QUICK_GENERATIONS = 20;
+	private final static int STOP_AFTER_UNCHANGED_GENERATIONS = 200;
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 	    // get job parameters
@@ -21,66 +25,52 @@ public class GeneticSalesman {
 	    String kmlPath = null;
 	    if(args.length == 2) 
 	    	kmlPath = args[1];
-	    ArrayList<City> citiesList=new ArrayList<>();
-	    try(BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(citiesFile),StandardCharsets.UTF_8))) {
-	    	String l;
-	    	int id = 0;
-	    	while((l=in.readLine())!=null) {
-	    		String[] parts=StringUtils.split(l, '\t');
-	    		if(parts.length == 5 && Integer.parseInt(parts[2])>50000)
-					citiesList.add(new City(id++, parts[1], Double.parseDouble(parts[3]), Double.parseDouble(parts[4])));
-	    	}
-	    }
+	    Problem problem=InputParser.parse(citiesFile);
 	    
-	    final City[] cities=citiesList.toArray(new City[citiesList.size()]);
-	    citiesList=null;
-	    System.out.println("COLLECTED CITIES");
-	    
-	    final double[][] distances=new double[cities.length][cities.length];
-	    for(int i=0;i<cities.length;i++) {
-	    	for(int j=0;j<cities.length;j++) {
-	    		distances[i][j]=cities[i].distanceTo(cities[j]);
-	    	}
-	    }
-	    System.out.println("CALCULATED DISTANCES");
+	   
 	    // initialize spark environment
 	    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
 	    config.set("spark.hadoop.validateOutputSpecs", "false");
 	    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
 	    		    	
-	    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(cities.length, distances));
+	    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 	    	Path globalBest = null;
+	    	int generationsWithoutChangeCounter=0;
 	    	
 	    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
-	    	for(int i=0;i<100;i++) {
-	    		System.out.println("Generation "+(10*i)+":");
+	    	for(int i=0;generationsWithoutChangeCounter<STOP_AFTER_UNCHANGED_GENERATIONS;i++) {
+	    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
 	    		
 	    		//MINOR GENERATION LOOP IS ONLY BUILDING A PLAN THAT IS EXECUTED ONCE 
-	    		for(int j=0;j<20;j++) {
+	    		for(int j=0;j<QUICK_GENERATIONS;j++) {
 	    		
 			    	//crossover
-			    	generation = Evolution.selectionCrossOver(generation, distances, cities.length);
+			    	generation = Evolution.selectionCrossOver(generation, problem.getDistances(), problem.getSize());
 			    	
 			    	//mutation
-			    	generation = Evolution.mutate(generation, distances);
+			    	generation = Evolution.mutate(generation, problem.getDistances());
 	    		}
 	    		
-	    		//TODO here we have to implement some kind of global austausch thingy
-	    		//simple solution is this total shuffle
+	    		//TODO test if global shuffle is better worse than some kind of 
 	    		generation=generation.coalesce(generation.partitions().size(), true);
 	    		
 	    		generation.cache();
 	    		
 	    		Path best=generation.min(Path.COMPARATOR);
+	    		
+	    		if(globalBest==null || best.getLength()<globalBest.getLength())
+	    			generationsWithoutChangeCounter=0;
+	    		else
+	    			generationsWithoutChangeCounter+=QUICK_GENERATIONS;
+	    		
 	    		globalBest = best;
 	    		System.out.println("\tElite: "+best.getLength()+"\t"+best);
-	    		System.out.println("\tGeneration Size: "+generation.count());
 	    	}
 	    	
 	    	System.out.println("Found : "+globalBest.toString());
-	    	if(kmlPath != null) {
-	    		Helper.KMLExport.exportPath(globalBest, cities, kmlPath);
-	    	}
+	    	//export result
+	    	if(kmlPath != null)
+	    		Helper.KMLExport.exportPath(globalBest, problem.getCities(), kmlPath);
 	    }
 	}
 }

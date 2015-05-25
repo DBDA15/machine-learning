@@ -9,8 +9,6 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import scala.Array;
-
 import com.google.common.primitives.Ints;
 
 public class Path implements Serializable {
@@ -108,13 +106,13 @@ public class Path implements Serializable {
 	}
 
 	public Path mutate(double[][] distances) {
-		Random r=new Random();
+		Random r=ThreadLocalRandom.current();
 		int[] newPath = Arrays.copyOf(path, path.length);
 		double newDistance = distance;
 		
-		if(!currentElite && r.nextDouble()<0.6) {
+		if(!currentElite && r.nextDouble()<0.7) {
 			//swap sequences
-			if(r.nextBoolean()) {
+			if(r.nextDouble()<0.3) {
 				int swapLength = r.nextInt(path.length/2)+1;
 				int swap1Position = r.nextInt(path.length);
 				int numPossibleSwap2StartPositions = path.length-(2*swapLength-1);
