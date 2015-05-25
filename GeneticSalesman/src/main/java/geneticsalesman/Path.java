@@ -42,6 +42,8 @@ public class Path implements Serializable {
 		for(int i=0;i<length-1;i++)
 			p[i+1]=l.get(i);
 		
+		p=normalize(p);
+		
 		return new Path(p, calculateLength(p, distances));
 	}
 	
@@ -68,7 +70,7 @@ public class Path implements Serializable {
 		for(int v:p2.path)
 			if(set.add(v)); //add all missing elements in the order of p2
 				
-		int[] p=Ints.toArray(set);
+		int[] p=normalize(Ints.toArray(set));
 		return new Path(p, calculateLength(p, distances));
 	}
 	

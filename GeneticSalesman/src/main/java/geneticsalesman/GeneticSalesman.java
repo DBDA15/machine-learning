@@ -25,7 +25,6 @@ public class GeneticSalesman {
 	    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
 	    config.set("spark.hadoop.validateOutputSpecs", "false");
 	    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
-	    		    	
 	    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 	    	Path globalBest = null;
 	    	int generationsWithoutChangeCounter=0;

@@ -51,7 +51,7 @@ public interface Helper {
 	
 	public static class KMLExport {
 		
-		public static void exportPath(Path path, Problem problem, String filename, Path optimum) throws IOException {
+		public static void exportPath(Path path, Problem problem, String filename) throws IOException {
 			City[] cities=problem.getCities();
 			
 			XMLTag xml = XMLDoc.newDocument(false)
@@ -77,9 +77,9 @@ public interface Helper {
 				//add path
 				addPath(docTag, "found", lineCoordinates);
 				
-				if(optimum != null) {
+				if(problem.getOptimal() != null) {
 					StringBuilder optimumCoordinates = new StringBuilder();
-					for(int id : optimum.getIDs()) 
+					for(int id : problem.getOptimal().getIDs()) 
 						addCity(cities[id], null, optimumCoordinates);
 					addPath(docTag, "optimum", optimumCoordinates);
 				}
