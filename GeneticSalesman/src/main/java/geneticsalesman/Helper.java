@@ -51,7 +51,9 @@ public interface Helper {
 	
 	public static class KMLExport {
 		
-		public static void exportPath(Path path, City[] cities, String filename) throws IOException {
+		public static void exportPath(Path path, Problem problem, String filename) throws IOException {
+			City[] cities=problem.getCities();
+			
 			XMLTag xml = XMLDoc.newDocument(false)
 					.addDefaultNamespace("http://www.opengis.net/kml/2.2")
 					.addRoot("kml");

@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class City implements Serializable {
 
-	private static final int EARTH_RADIUS=6371000; //meters
+	private static final int EARTH_RADIUS=6378388; //meters
 	
 	private final String name;
 	private final double longitude;
@@ -31,13 +31,18 @@ public class City implements Serializable {
 	}
 
 	public double distanceTo(City otherCity) {
-	    double dLat = Math.toRadians(otherCity.latitude-this.latitude);
+	    /*double dLat = Math.toRadians(otherCity.latitude-this.latitude);
 	    double dLng = Math.toRadians(otherCity.longitude-this.longitude);
 	    double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
 	               Math.cos(Math.toRadians(this.latitude)) * Math.cos(Math.toRadians(otherCity.latitude)) *
 	               Math.sin(dLng/2) * Math.sin(dLng/2);
 	    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-	    return EARTH_RADIUS * c;
+	    return EARTH_RADIUS * c;*/
+		double q1=Math.cos(Math.toRadians(otherCity.longitude-this.longitude));
+		double q2=Math.cos(Math.toRadians(otherCity.latitude-this.latitude));
+		double q3=Math.cos(Math.toRadians(otherCity.latitude+this.latitude));
+		double distance=EARTH_RADIUS*Math.acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3))+1.0;
+		return distance;
 	}
 
 	@Override

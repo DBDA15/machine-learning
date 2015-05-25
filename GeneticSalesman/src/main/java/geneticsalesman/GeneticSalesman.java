@@ -67,7 +67,7 @@ public class GeneticSalesman {
 	    	}
 	    	//export result
 	    	if(kmlPath != null)
-	    		Helper.KMLExport.exportPath(globalBest, problem.getCities(), kmlPath);
+	    		Helper.KMLExport.exportPath(globalBest, problem, kmlPath);
 	    }
 	}
 }
