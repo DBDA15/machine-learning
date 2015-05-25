@@ -16,7 +16,7 @@ public class Path implements Serializable {
 	private double distance;
 	private boolean currentElite;
 	
-	private Path(int[] path, double distance) {
+	Path(int[] path, double distance) {
 		this.path=path;
 		this.distance=distance;
 	}
@@ -111,37 +111,66 @@ public class Path implements Serializable {
 		double newDistance = distance;
 		
 		if(!currentElite && r.nextDouble()<0.7) {
-			//swap sequences
-			if(r.nextDouble()<0.3) {
-				int swapLength = r.nextInt(path.length/2)+1;
-				int swap1Position = r.nextInt(path.length);
-				int numPossibleSwap2StartPositions = path.length-(2*swapLength-1);
-				int swap2Position = (swap1Position + swapLength + r.nextInt(numPossibleSwap2StartPositions)) % path.length;
-
-				for(int i = 0; i<swapLength; i++) {
-					int temp = newPath[(swap1Position+i)%path.length];
-					newPath[(swap1Position+i)%path.length] = newPath[(swap2Position+i)%path.length];
-					newPath[(swap2Position+i)%path.length] = temp;
-				}
-				
+			double modificationDecider = r.nextDouble();
+			if(modificationDecider<0.33) {
+				swapSequenceMutation(r, newPath);	
 			}
-			//swap single pairs
-			else {	
-				do {
-					int pos1 = r.nextInt(newPath.length);
-					int pos2 = r.nextInt(newPath.length-1);
-					if(pos2 >= pos1)
-						pos2++;
-					int temp = newPath[pos1];
-					newPath[pos1] = newPath[pos2];
-					newPath[pos2] = temp;
-				} while(r.nextDouble()<0.4);
+			else if(modificationDecider<0.66){
+				swapSinglePairMutation(r, newPath);
 			}
-			
+			else {
+				viceVersaMutation(r, newPath);
+			}
 			newPath = rotate(newPath);
 			newDistance = calculateLength(newPath, distances);
 		}
 		return new Path(newPath, newDistance);
+	}
+
+	private void viceVersaMutation(Random r, int[] newPath) {
+		int pos1 = r.nextInt(newPath.length);
+		int length = r.nextInt(newPath.length);
+		int pos2 = (pos1 + length) % newPath.length;
+		while(Math.abs(pos1-pos2)>1){
+			int temp = newPath[pos1];
+			newPath[pos1] = newPath[pos2];
+			newPath[pos2] = temp;
+			pos1++;pos2--;
+			if(pos1 >= newPath.length)
+				pos1-=newPath.length;
+			if(pos2 < 0) 
+				pos2+=newPath.length;
+		}
+		if(pos2-pos1==1) {
+			int temp = newPath[pos1];
+			newPath[pos1] = newPath[pos2];
+			newPath[pos2] = temp;
+		}
+	}
+
+	private void swapSinglePairMutation(Random r, int[] newPath) {
+		do {
+			int pos1 = r.nextInt(newPath.length);
+			int pos2 = r.nextInt(newPath.length-1);
+			if(pos2 >= pos1)
+				pos2++;
+			int temp = newPath[pos1];
+			newPath[pos1] = newPath[pos2];
+			newPath[pos2] = temp;
+		} while(r.nextDouble()<0.4);
+	}
+
+	private void swapSequenceMutation(Random r, int[] newPath) {
+		int swapLength = r.nextInt(path.length/2)+1;
+		int swap1Position = r.nextInt(path.length);
+		int numPossibleSwap2StartPositions = path.length-(2*swapLength-1);
+		int swap2Position = (swap1Position + swapLength + r.nextInt(numPossibleSwap2StartPositions)) % path.length;
+
+		for(int i = 0; i<swapLength; i++) {
+			int temp = newPath[(swap1Position+i)%path.length];
+			newPath[(swap1Position+i)%path.length] = newPath[(swap2Position+i)%path.length];
+			newPath[(swap2Position+i)%path.length] = temp;
+		}
 	}
 
 	private static int[] rotate(int[] path) {
