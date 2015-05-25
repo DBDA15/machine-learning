@@ -51,41 +51,58 @@ public interface Helper {
 	
 	public static class KMLExport {
 		
-		public static void exportPath(Path path, Problem problem, String filename) throws IOException {
+		public static void exportPath(Path path, Problem problem, String filename, Path optimum) throws IOException {
 			City[] cities=problem.getCities();
 			
 			XMLTag xml = XMLDoc.newDocument(false)
 					.addDefaultNamespace("http://www.opengis.net/kml/2.2")
 					.addRoot("kml");
 			XMLTag docTag = xml.addTag("Document");
-				docTag.addTag("LineStyle")
-				    	.addTag("width").setText("3")
+				docTag.addTag("Style").addAttribute("id","optimum").addTag("LineStyle")
+				    	.addTag("width").setText("2")
 				    	.addTag("color").setText("ff33ccff")
-				    	.gotoParent();
+				    	.gotoParent().gotoParent()
+			    	.addTag("Style").addAttribute("id","found").addTag("LineStyle")
+				    	.addTag("width").setText("2")
+				    	.addTag("color").setText("ffffffff")
+				    	.gotoParent().gotoParent();
 			    StringBuilder lineCoordinates = new StringBuilder();
 			    
 			    //add points
-				for(int id : path.getIDs()) {
+				for(int id : path.getIDs()) 
 					addCity(cities[id], docTag, lineCoordinates);
-				}
 				//close circle
 				addCity(cities[0], docTag, lineCoordinates); 	
 				
 				//add path
-				docTag.addTag("Placemark")
-		    		.addTag("LineString")
-		    			.addTag("coordinates")
-		    				.setText(lineCoordinates.toString());
+				addPath(docTag, "found", lineCoordinates);
+				
+				if(optimum != null) {
+					StringBuilder optimumCoordinates = new StringBuilder();
+					for(int id : optimum.getIDs()) 
+						addCity(cities[id], null, optimumCoordinates);
+					addPath(docTag, "optimum", optimumCoordinates);
+				}
+				
 				
 			try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8))) {
 				out.write(xml.toString());
 			}
 		}
 
+		public static void addPath(XMLTag docTag, String marker, StringBuilder lineCoordinates) {
+			docTag.addTag("Placemark")
+				.addTag("styleUrl").setText("#"+marker)
+				.addTag("name").setText(marker)
+				.addTag("LineString")
+					.addTag("coordinates")
+						.setText(lineCoordinates.toString()).gotoParent().gotoParent();
+		}
+
 		private static void addCity(City city, XMLTag docTag, StringBuilder lineCoordinates) {
 			String cityCoordinates = city.getLatitude() + "," + city.getLongitude();
 			lineCoordinates.append(cityCoordinates).append("\n");
-			docTag.addTag("Placemark")
+			if(docTag!=null) docTag.addTag("Placemark")
 				.addTag("name").setText(city.getName())
 				.addTag("Point")
 					.addTag("coordinates")
