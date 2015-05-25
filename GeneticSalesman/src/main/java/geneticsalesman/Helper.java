@@ -101,7 +101,7 @@ public interface Helper {
 		}
 
 		private static void addCity(City city, XMLTag docTag, StringBuilder lineCoordinates) {
-			String cityCoordinates = city.getLatitude() + "," + city.getLongitude();
+			String cityCoordinates = city.getLongitude()+","+city.getLatitude();
 			lineCoordinates.append(cityCoordinates).append("\n");
 			if(docTag!=null) docTag.addTag("Placemark")
 				.addTag("name").setText(city.getName())

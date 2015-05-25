@@ -1,10 +1,6 @@
 package geneticsalesman;
 
-import java.awt.geom.Point2D;
 import java.io.Serializable;
-
-import com.bbn.openmap.proj.Length;
-import com.bbn.openmap.proj.coords.LatLonPoint;
 
 public class City implements Serializable {
 
