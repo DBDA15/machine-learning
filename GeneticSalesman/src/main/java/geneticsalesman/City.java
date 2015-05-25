@@ -68,4 +68,8 @@ public class City implements Serializable {
 				+ ", latitude=" + latitude + "]";
 	}
 
+	public int getId() {
+		return id;
+	}
+
 }

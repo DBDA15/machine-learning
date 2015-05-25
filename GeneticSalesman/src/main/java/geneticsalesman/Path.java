@@ -47,7 +47,7 @@ public class Path implements Serializable {
 	
 	@Override
 	public String toString() {
-		return Arrays.toString(path);
+		return Arrays.toString(path)+" => "+distance;
 	}
 	
 	public String toString(City[] cities) {
@@ -144,7 +144,7 @@ public class Path implements Serializable {
 		return new Path(newPath, newDistance);
 	}
 
-	private int[] rotate(int[] path) {
+	private static int[] rotate(int[] path) {
 		if(path[0] == 0) 
 			return path;
 		int[] newPath = new int[path.length];
@@ -162,6 +162,11 @@ public class Path implements Serializable {
 	
 	public void setCurrentElite(boolean currentElite) {
 		this.currentElite = currentElite;
+	}
+
+	public static Path createNormalizedPath(int[] p, double[][] distances) {
+		int[] r = rotate(p);
+		return new Path(r, calculateLength(r, distances));
 	}
 	
 	

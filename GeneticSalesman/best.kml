@@ -6,154 +6,126 @@
             <color>ff33ccff</color>
         </LineStyle>
         <Placemark>
-            <name>Berlin</name>
+            <name>1</name>
             <Point>
-                <coordinates>13.4,52.516667</coordinates>
+                <coordinates>20.700000000000003,38.400000000000006</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Dresden</name>
+            <name>8</name>
             <Point>
-                <coordinates>13.75,51.05</coordinates>
+                <coordinates>20.733333333333334,37.866666666666674</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Leipzig</name>
+            <name>4</name>
             <Point>
-                <coordinates>12.333333,51.3</coordinates>
+                <coordinates>23.200000000000003,36.43333333333333</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Nuremberg</name>
+            <name>2</name>
             <Point>
-                <coordinates>11.068333,49.447778</coordinates>
+                <coordinates>26.249999999999996,39.95</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Munich</name>
+            <name>3</name>
             <Point>
-                <coordinates>11.5833,48.15</coordinates>
+                <coordinates>25.533333333333335,40.93333333333334</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Stuttgart</name>
+            <name>16</name>
             <Point>
-                <coordinates>9.183333,48.766667</coordinates>
+                <coordinates>19.93333333333333,39.6</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Mannheim</name>
+            <name>15</name>
             <Point>
-                <coordinates>8.464722,49.488333</coordinates>
+                <coordinates>14.533333333333333,35.81666666666667</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Frankfurt</name>
+            <name>5</name>
             <Point>
-                <coordinates>8.683333,50.116667</coordinates>
+                <coordinates>10.899999999999999,33.8</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Dortmund</name>
+            <name>6</name>
             <Point>
-                <coordinates>7.45,51.516667</coordinates>
+                <coordinates>12.316666666666666,37.93333333333334</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Wuppertal</name>
+            <name>11</name>
             <Point>
-                <coordinates>7.183333,51.266667</coordinates>
+                <coordinates>-5.35,36.13333333333333</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Bonn</name>
+            <name>9</name>
             <Point>
-                <coordinates>7.1,50.733333</coordinates>
+                <coordinates>9.166666666666666,41.383333333333326</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Cologne</name>
+            <name>10</name>
             <Point>
-                <coordinates>6.95,50.933333</coordinates>
+                <coordinates>13.083333333333334,41.28333333333334</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Duisburg</name>
+            <name>7</name>
             <Point>
-                <coordinates>6.75,51.433333</coordinates>
+                <coordinates>13.183333333333332,38.7</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Düsseldorf</name>
+            <name>12</name>
             <Point>
-                <coordinates>6.766667,51.216667</coordinates>
+                <coordinates>15.216666666666669,38.78333333333333</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Essen</name>
+            <name>14</name>
             <Point>
-                <coordinates>7.016667,51.45</coordinates>
+                <coordinates>15.283333333333333,37.849999999999994</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Bochum</name>
+            <name>13</name>
             <Point>
-                <coordinates>7.216667,51.483333</coordinates>
+                <coordinates>15.583333333333332,38.25</coordinates>
             </Point>
         </Placemark>
         <Placemark>
-            <name>Bielefeld</name>
+            <name>1</name>
             <Point>
-                <coordinates>8.533333,52.033333</coordinates>
-            </Point>
-        </Placemark>
-        <Placemark>
-            <name>Bremen</name>
-            <Point>
-                <coordinates>8.8,53.083333</coordinates>
-            </Point>
-        </Placemark>
-        <Placemark>
-            <name>Hanover</name>
-            <Point>
-                <coordinates>9.716667,52.366667</coordinates>
-            </Point>
-        </Placemark>
-        <Placemark>
-            <name>Hamburg</name>
-            <Point>
-                <coordinates>10.0,53.55</coordinates>
-            </Point>
-        </Placemark>
-        <Placemark>
-            <name>Berlin</name>
-            <Point>
-                <coordinates>13.4,52.516667</coordinates>
+                <coordinates>20.700000000000003,38.400000000000006</coordinates>
             </Point>
         </Placemark>
         <Placemark>
             <LineString>
-                <coordinates>13.4,52.516667
-13.75,51.05
-12.333333,51.3
-11.068333,49.447778
-11.5833,48.15
-9.183333,48.766667
-8.464722,49.488333
-8.683333,50.116667
-7.45,51.516667
-7.183333,51.266667
-7.1,50.733333
-6.95,50.933333
-6.75,51.433333
-6.766667,51.216667
-7.016667,51.45
-7.216667,51.483333
-8.533333,52.033333
-8.8,53.083333
-9.716667,52.366667
-10.0,53.55
-13.4,52.516667
+                <coordinates>20.700000000000003,38.400000000000006
+20.733333333333334,37.866666666666674
+23.200000000000003,36.43333333333333
+26.249999999999996,39.95
+25.533333333333335,40.93333333333334
+19.93333333333333,39.6
+14.533333333333333,35.81666666666667
+10.899999999999999,33.8
+12.316666666666666,37.93333333333334
+-5.35,36.13333333333333
+9.166666666666666,41.383333333333326
+13.083333333333334,41.28333333333334
+13.183333333333332,38.7
+15.216666666666669,38.78333333333333
+15.283333333333333,37.849999999999994
+15.583333333333332,38.25
+20.700000000000003,38.400000000000006
 </coordinates>
             </LineString>
         </Placemark>

@@ -1,15 +1,8 @@
 package geneticsalesman;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -64,10 +57,12 @@ public class GeneticSalesman {
 	    			generationsWithoutChangeCounter+=QUICK_GENERATIONS;
 	    		
 	    		globalBest = best;
-	    		System.out.println("\tElite: "+best.getLength()+"\t"+best);
+	    		System.out.println("\tElite:\t"+best);
 	    	}
 	    	
-	    	System.out.println("Found : "+globalBest.toString());
+	    	System.out.println("Found:\t"+globalBest);
+	    	if(problem.getOptimal()!=null)
+	    		System.out.println("Opt.:\t"+problem.getOptimal());
 	    	//export result
 	    	if(kmlPath != null)
 	    		Helper.KMLExport.exportPath(globalBest, problem.getCities(), kmlPath);
