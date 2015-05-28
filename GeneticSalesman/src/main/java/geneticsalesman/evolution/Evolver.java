@@ -6,60 +6,75 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import geneticsalesman.Path;
+import geneticsalesman.VariableByteEncoding;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
-public class RouletteCrossOver implements FlatMapFunction<Iterator<Path>, Path>, Serializable{
+public class Evolver implements FlatMapFunction<Iterator<Path>, Path>, Serializable{
 
-	private static RouletteCrossOver instance;
+	private static Evolver instance;
 	
-	public static RouletteCrossOver getInstance(Broadcast<double[][]> distances) {
+	public static Evolver getInstance(int generations, Broadcast<double[][]> distances) {
 		if(instance==null)
-			instance=new RouletteCrossOver(distances);
+			instance=new Evolver(generations, distances);
 		return instance;
 	}
 	
-	private final Broadcast<double[][]> distances;
+	private Broadcast<double[][]> distances;
+	private int generations;
 	
-	private RouletteCrossOver(Broadcast<double[][]> distances) {
+	private Evolver(int generations, Broadcast<double[][]> distances) {
 		this.distances=distances;
+		this.generations=generations;
 	}
 	
 	@Override
 	public Iterable<Path> call(Iterator<Path> t) throws Exception {
-					
+		
+		List<Path> currentGen=Lists.newArrayList(t);
+		
+		//do more than one generation at once
+		for(int gen=0;gen<generations;gen++) {
+			currentGen=rouletteCrossOver(currentGen);
+			
+			ListIterator<Path> it=currentGen.listIterator();
+			while(it.hasNext())
+				it.set(it.next().mutate(distances.getValue()));
+		}				
+		return currentGen;
+	}
+	
+	private List<Path> rouletteCrossOver(List<Path> lastGen) {
 		//collect paths to rangemap that maps probability to path
 		Path elite=null;
 		RangeMap<Double, Path> list=TreeRangeMap.create();
 		double probabilityCounter=0;
-		int counter=0;
 		
-		while(t.hasNext()) {
-			Path p=t.next();
-			
+		for(Path p:lastGen) {
 			if(elite==null || p.getLength()<elite.getLength())
 				elite=p;
 			
 			double prob=1000/p.getLength();
 			list.put(Range.closed(probabilityCounter, probabilityCounter+prob), p);
 			probabilityCounter+=prob;
-			
-			counter++;
 		}
 		
 		//cross new children
 		Random r=ThreadLocalRandom.current();
-		ArrayList<Path> nextGeneration = new ArrayList<>(counter);
-		for(int i=0;i<counter-1;i++) { //one less because of elite
+		ArrayList<Path> nextGeneration = new ArrayList<>(lastGen.size());
+		for(int i=0;i<lastGen.size()-1;i++) { //one less because of elite
 			nextGeneration.add(
 					list.get(r.nextDouble()*probabilityCounter).cross(
 							list.get(r.nextDouble()*probabilityCounter),
@@ -69,16 +84,17 @@ public class RouletteCrossOver implements FlatMapFunction<Iterator<Path>, Path>,
 		//add elite at the end
 		elite.setMarked(true);
 		nextGeneration.add(elite);
-					
 		return nextGeneration;
 	}
-	
+
 	private void writeObject(ObjectOutputStream out) throws IOException {
-	    out.defaultWriteObject();
+	    VariableByteEncoding.writeVNumber(out, generations);
+	    out.writeObject(distances);
 	}
 
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-	    in.defaultReadObject();
+	    generations=VariableByteEncoding.readVInt(in);
+	    distances=(Broadcast<double[][]>) in.readObject();
 	}
 
 }

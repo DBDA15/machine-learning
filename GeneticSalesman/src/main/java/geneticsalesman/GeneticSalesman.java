@@ -14,7 +14,7 @@ import org.apache.spark.broadcast.Broadcast;
 
 public class GeneticSalesman {
 	
-	private final static int QUICK_GENERATIONS = 200;
+	private final static int QUICK_GENERATIONS = 100;
 	private final static double STOP_WHEN_GOOD_ENOUGH = 0.98;
 	private final static boolean TOURNAMENT_SHUFFLE = false;
 
@@ -52,15 +52,8 @@ public class GeneticSalesman {
 		    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
 		    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
 		    		
-		    		//MINOR GENERATION LOOP IS ONLY BUILDING A PLAN THAT IS EXECUTED ONCE 
-		    		for(int j=0;j<QUICK_GENERATIONS;j++) {
 		    		
-				    	//crossover
-				    	generation = Evolution.selectionCrossOver(generation, distanceBroadcast, problem.getSize());
-				    	
-				    	//mutation
-				    	generation = Evolution.mutate(generation, distanceBroadcast);
-		    		}
+		    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, distanceBroadcast);
 		    		
 		    		if(TOURNAMENT_SHUFFLE) {
 		    			generation=Evolution.rouletteShuffle(generation, ctx);
@@ -82,6 +75,7 @@ public class GeneticSalesman {
 		    		double percentage = problem.getOptimal().getLength()/globalBest.getLength()*100;
 		    		
 		    		writer.write(generationNumber + ","+ timeDiff + "," + percentage + "\n");
+		    		System.out.println("\t"+percentage);
 		    	}
 		    	
 		    	System.out.println("Took: "+(System.nanoTime()-time)*1000000000 + "s");

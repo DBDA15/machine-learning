@@ -30,19 +30,6 @@ public class Evolution {
     	return generation;
 	}
 
-	public static JavaRDD<Path> selectionCrossOver(JavaRDD<Path> generation, final Broadcast<double[][]> distances, int numberOfCities) {
-		//select and cross over in each partition
-		return generation.mapPartitions(RouletteCrossOver.getInstance(distances), true); //true -> preserve partitions
-	}
-	
-	@SuppressWarnings("serial")
-	public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final Broadcast<double[][]> distances) {
-		//select and cross over in each partition
-		generation = generation.map(Mutate.getInstance(distances));
-		
-		return generation;
-	}
-
 	public static JavaRDD<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
 		generation=generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
 			@Override
@@ -93,6 +80,10 @@ public class Evolution {
 		}).union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
 		cached.unpersist();
 		return generation;
+	}
+
+	public static JavaRDD<Path> evolve(JavaRDD<Path> generation, int generations, final Broadcast<double[][]> distances) {
+		return generation.mapPartitions(Evolver.getInstance(generations, distances), true);
 	} 
 	
 }
