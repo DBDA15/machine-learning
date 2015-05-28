@@ -1,12 +1,18 @@
 package geneticsalesman;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.api.java.function.Function2;
 
 import com.mycila.xmltool.XMLDoc;
@@ -51,7 +57,7 @@ public interface Helper {
 	
 	public static class KMLExport {
 		
-		public static void exportPath(Path path, Problem problem, String filename) throws IOException {
+		public static void exportPath(Path path, Problem problem, BufferedWriter kmlWriter) throws IOException {
 			City[] cities=problem.getCities();
 			
 			XMLTag xml = XMLDoc.newDocument(false)
@@ -86,9 +92,7 @@ public interface Helper {
 				}
 				
 				
-			try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8))) {
-				out.write(xml.toString());
-			}
+			kmlWriter.write(xml.toString());
 		}
 
 		public static void addPath(XMLTag docTag, String marker, StringBuilder lineCoordinates) {
@@ -110,6 +114,27 @@ public interface Helper {
 						.setText(cityCoordinates)
 					.gotoParent()
 				.gotoParent();
+		}
+		
+	}
+	
+	public static class Output {
+		public static BufferedWriter writer(String path) throws IOException, URISyntaxException {
+			OutputStream os;
+			if(path.startsWith("hdfs")) {
+				Configuration configuration = new Configuration();
+				FileSystem hdfs = FileSystem.get( new URI( "hdfs://tenemhead2" ), configuration );
+				org.apache.hadoop.fs.Path file = new org.apache.hadoop.fs.Path(path);
+				if ( hdfs.exists( file )) { hdfs.delete( file, true ); } 
+				os = hdfs.create(file);
+			}
+			else {
+				File file = new File(path);
+				if(path.contains("/"))
+					file.getParentFile().mkdirs();
+				os = new FileOutputStream(file);
+			}
+			return new BufferedWriter( new OutputStreamWriter( os, "UTF-8" ) );
 		}
 	}
 }

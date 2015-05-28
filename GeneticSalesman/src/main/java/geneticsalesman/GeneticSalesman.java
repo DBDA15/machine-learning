@@ -1,7 +1,9 @@
 package geneticsalesman;
 
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -10,16 +12,20 @@ import org.apache.spark.broadcast.Broadcast;
 
 public class GeneticSalesman {
 	
-	private final static int QUICK_GENERATIONS = 20;
+	private final static int QUICK_GENERATIONS = 200;
 	private final static double STOP_WHEN_GOOD_ENOUGH = 0.98;
 	private final static boolean TOURNAMENT_SHUFFLE = false;
 
-	public static void main(String[] args) throws FileNotFoundException, IOException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException {
+		String outPath;
+		if(args.length == 2)
+			outPath = args[1]+"/";
+		else
+			outPath = "";
+		BufferedWriter writer = Helper.Output.writer(outPath + "out.txt");
+		
 	    // get job parameters
 	    final String citiesFile = args[0];
-	    String kmlPath = null;
-	    if(args.length == 2) 
-	    	kmlPath = args[1];
 	    Problem problem;
 	    try(InputParser in=new InputParser()) {
 	    	problem=in.parse(citiesFile);
@@ -43,7 +49,7 @@ public class GeneticSalesman {
 	    	
 	    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
 	    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
-	    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
+	    		//System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
 	    		
 	    		//MINOR GENERATION LOOP IS ONLY BUILDING A PLAN THAT IS EXECUTED ONCE 
 	    		for(int j=0;j<QUICK_GENERATIONS;j++) {
@@ -75,8 +81,14 @@ public class GeneticSalesman {
 	    			generationsWithoutChangeCounter+=QUICK_GENERATIONS;
 	    		
 	    		globalBest = best;
-	    		System.out.println("\tElite:\t"+best+" ("+(int)(problem.getOptimal().getLength()/globalBest.getLength()*100)+")");
+	    		int generationNumber = QUICK_GENERATIONS*i;
+	    		long timeDiff = (System.nanoTime()-time)/(long)1000000000;
+	    		double percentage = problem.getOptimal().getLength()/globalBest.getLength()*100;
+	    		
+	    		writer.write(generationNumber + ","+ timeDiff + "," + percentage + "\n");
 	    	}
+	    	
+	    	System.out.println("Took: "+(System.nanoTime()-time)*1000000000 + "s");
 	    	
 	    	System.out.println("Found:\t"+globalBest);
 	    	if(problem.getOptimal()!=null) {
@@ -85,8 +97,11 @@ public class GeneticSalesman {
 	    	}
 	    	System.out.println("Required:\t"+((System.nanoTime()-time)/1000000l)+" ms");
 	    	//export result
-	    	if(kmlPath != null)
-	    		Helper.KMLExport.exportPath(globalBest, problem, kmlPath);
+	    	
+	    	BufferedWriter kmlWriter =  Helper.Output.writer(outPath + "out.kml"); 
+    		Helper.KMLExport.exportPath(globalBest, problem, kmlWriter);
+    		kmlWriter.close();
+    		writer.close();
 	    }
 	}
 }

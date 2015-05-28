@@ -6,6 +6,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +21,7 @@ public class InputParser implements Closeable {
 
 	private FileSystem fs;
 
-	public Problem parse(String citiesFile) throws IOException {
+	public Problem parse(String citiesFile) throws IOException, URISyntaxException {
 		if(citiesFile.endsWith(".tsv"))
 			return parseDefault(citiesFile);
 		else if(citiesFile.endsWith(".tsp"))
@@ -28,7 +30,7 @@ public class InputParser implements Closeable {
 			throw new IllegalArgumentException(citiesFile);
 	}
 
-	private Problem parseTSP(String citiesFile) throws IOException {
+	private Problem parseTSP(String citiesFile) throws IOException, URISyntaxException {
 		ArrayList<City> citiesList=new ArrayList<>();
 		HashMap<String, Integer> nameIdMap=new HashMap<>();
 	    try(BufferedReader in = new BufferedReader(new InputStreamReader(createInputStream(citiesFile),StandardCharsets.UTF_8))) {
@@ -66,7 +68,7 @@ public class InputParser implements Closeable {
 	    return new Problem(citiesList, path);
 	}
 
-	private Problem parseDefault(String citiesFile) throws IOException {
+	private Problem parseDefault(String citiesFile) throws IOException, URISyntaxException {
 		ArrayList<City> citiesList=new ArrayList<>();
 	    try(BufferedReader in = new BufferedReader(new InputStreamReader(createInputStream(citiesFile),StandardCharsets.UTF_8))) {
 	    	String l;
@@ -80,14 +82,14 @@ public class InputParser implements Closeable {
 	    return new Problem(citiesList);
 	}
 
-	private InputStream createInputStream(String file) throws IOException {
-		if(file.startsWith("hdfs://")) {
-			if(fs==null)
-				fs = FileSystem.get(new Configuration());
-			return fs.open(new Path(file));
+	private InputStream createInputStream(String fileName) throws IOException, URISyntaxException {
+		if(fileName.startsWith("hdfs://")) {
+			Configuration configuration = new Configuration();
+			FileSystem hdfs = FileSystem.get( new URI( "hdfs://tenemhead2" ), configuration );
+			return hdfs.open(new org.apache.hadoop.fs.Path(fileName));
 		}
 		else
-			return new FileInputStream(file);
+			return new FileInputStream(fileName);
 	}
 
 	@Override
