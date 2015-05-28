@@ -1,4 +1,6 @@
-package geneticsalesman;
+package geneticsalesman.evolution;
+
+import geneticsalesman.Path;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +21,7 @@ import com.google.common.collect.TreeRangeMap;
 
 public class Evolution {
 	
-	static int POPULATION_SIZE=10000;
+	public static int POPULATION_SIZE=10000;
 
 	public static List<Path> generateRandomGeneration(int numberOfCities, double[][] distances) {
 		ArrayList<Path> generation=new ArrayList<>(POPULATION_SIZE);
@@ -30,60 +32,13 @@ public class Evolution {
 
 	public static JavaRDD<Path> selectionCrossOver(JavaRDD<Path> generation, final Broadcast<double[][]> distances, int numberOfCities) {
 		//select and cross over in each partition
-		generation = generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
-			@SuppressWarnings("null")
-			@Override
-			public Iterable<Path> call(Iterator<Path> t) throws Exception {
-					
-				//collect paths to rangemap that maps probability to path
-				Path elite=null;
-				RangeMap<Double, Path> list=TreeRangeMap.create();
-				double probabilityCounter=0;
-				int counter=0;
-				
-				while(t.hasNext()) {
-					Path p=t.next();
-					
-					if(elite==null || p.getLength()<elite.getLength())
-						elite=p;
-					
-					double prob=1000/p.getLength();
-					list.put(Range.closed(probabilityCounter, probabilityCounter+prob), p);
-					probabilityCounter+=prob;
-					
-					counter++;
-				}
-				
-				//cross new children
-				Random r=new Random();
-				ArrayList<Path> nextGeneration = new ArrayList<>(counter);
-				for(int i=0;i<counter-1;i++) { //one less because of elite
-					nextGeneration.add(
-							list.get(r.nextDouble()*probabilityCounter).cross(
-									list.get(r.nextDouble()*probabilityCounter),
-									distances.getValue()));
-				}
-				
-				//add elite at the end
-				elite.setMarked(true);
-				nextGeneration.add(elite);
-							
-				return nextGeneration;
-			}
-		}, true); //true -> preserve partitions
-		
-		return generation;
+		return generation.mapPartitions(RouletteCrossOver.getInstance(distances), true); //true -> preserve partitions
 	}
 	
 	@SuppressWarnings("serial")
 	public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final Broadcast<double[][]> distances) {
 		//select and cross over in each partition
-		generation = generation.map((new Function<Path, Path>() {
-			@Override
-			public Path call(Path p) throws Exception {
-				return p.mutate(distances.getValue());
-			}
-		}));
+		generation = generation.map(Mutate.getInstance(distances));
 		
 		return generation;
 	}

@@ -1,5 +1,7 @@
 package geneticsalesman;
 
+import geneticsalesman.evolution.Evolution;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -41,6 +43,7 @@ public class GeneticSalesman {
 	    	int generationsWithoutChangeCounter=0;
 	    	long time=System.nanoTime();
 	    	
+	    	
 	    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
 	    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
 	    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
@@ -61,7 +64,7 @@ public class GeneticSalesman {
 	    		else
 	    			generation=generation.coalesce(generation.partitions().size(), true);
 	    		
-	    		generation=generation.cache();
+	    		//generation=generation.cache();
 	    		
 	    		Path best=generation.min(Path.COMPARATOR);
 	    		
