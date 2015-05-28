@@ -4,8 +4,6 @@ import java.io.Serializable;
 
 public class City implements Serializable {
 
-	private static final double EARTH_RADIUS=6378.388; //kilometers
-	
 	private final String name;
 	private final double longitude;
 	private final double latitude;
@@ -90,10 +88,7 @@ public class City implements Serializable {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + id;
-		return result;
+		return id;
 	}
 
 	@Override

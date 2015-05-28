@@ -6,12 +6,13 @@ import java.io.IOException;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 
 public class GeneticSalesman {
 	
 	private final static int QUICK_GENERATIONS = 20;
-	private final static double STOP_WHEN_GOOD_ENOUGH = 0.99;
-	private final static boolean TOURNAMENT_SHUFFLE = true;
+	private final static double STOP_WHEN_GOOD_ENOUGH = 0.98;
+	private final static boolean TOURNAMENT_SHUFFLE = false;
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 	    // get job parameters
@@ -19,14 +20,23 @@ public class GeneticSalesman {
 	    String kmlPath = null;
 	    if(args.length == 2) 
 	    	kmlPath = args[1];
-	    Problem problem=InputParser.parse(citiesFile);
+	    Problem problem;
+	    try(InputParser in=new InputParser()) {
+	    	problem=in.parse(citiesFile);
+	    }
 	    
 	   
 	    // initialize spark environment
 	    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
 	    config.set("spark.hadoop.validateOutputSpecs", "false");
 	    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
+	    	System.out.println("Default Parallelism:\t"+ctx.sc().defaultParallelism());
+	    	System.out.println("Executor Size:\t"+ctx.sc().getExecutorStorageStatus().length);
+	    	Evolution.POPULATION_SIZE*=ctx.sc().defaultParallelism()/Math.sqrt(problem.getSize());
+	    	System.out.println("Population Size:\t"+Evolution.POPULATION_SIZE);
 	    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
+	    	Broadcast<double[][]> distanceBroadcast = ctx.broadcast(problem.getDistances());
+	    	JavaRDD<Path> lastGeneration=null;
 	    	Path globalBest = null;
 	    	int generationsWithoutChangeCounter=0;
 	    	long time=System.nanoTime();
@@ -39,14 +49,14 @@ public class GeneticSalesman {
 	    		for(int j=0;j<QUICK_GENERATIONS;j++) {
 	    		
 			    	//crossover
-			    	generation = Evolution.selectionCrossOver(generation, problem.getDistances(), problem.getSize());
+			    	generation = Evolution.selectionCrossOver(generation, distanceBroadcast, problem.getSize());
 			    	
 			    	//mutation
-			    	generation = Evolution.mutate(generation, problem.getDistances());
+			    	generation = Evolution.mutate(generation, distanceBroadcast);
 	    		}
 	    		
 	    		if(TOURNAMENT_SHUFFLE) {
-	    			generation=Evolution.tournamentShuffle(generation, ctx);
+	    			generation=Evolution.rouletteShuffle(generation, ctx);
 	    		}
 	    		else
 	    			generation=generation.coalesce(generation.partitions().size(), true);
@@ -54,6 +64,10 @@ public class GeneticSalesman {
 	    		generation=generation.cache();
 	    		
 	    		Path best=generation.min(Path.COMPARATOR);
+	    		
+	    		if(lastGeneration!=null)
+	    			lastGeneration.unpersist();
+	    		lastGeneration=generation;
 	    		
 	    		if(globalBest==null || best.getLength()<globalBest.getLength())
 	    			generationsWithoutChangeCounter=0;

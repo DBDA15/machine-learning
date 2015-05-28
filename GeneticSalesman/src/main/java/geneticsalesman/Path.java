@@ -1,5 +1,8 @@
 package geneticsalesman;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.google.common.primitives.Ints;
 
 public class Path implements Serializable {
-	private final int[] path;
+	private int[] path;
 	private double distance;
 	private boolean marked;
 	
@@ -31,7 +34,7 @@ public class Path implements Serializable {
 	public double getLength() {
 		return distance;
 	}
-
+	
 	public static Path createRandomPath(int length, double[][] distances) {
 		ArrayList<Integer> l=new ArrayList<>(length);
 		for(int i=1;i<length;i++)
@@ -49,7 +52,10 @@ public class Path implements Serializable {
 	
 	@Override
 	public String toString() {
-		return Arrays.toString(path)+" => "+distance;
+		if(path.length>15)
+			return Arrays.toString(Arrays.copyOf(path, 15))+"... => "+distance;
+		else
+			return Arrays.toString(path)+" => "+distance;
 	}
 	
 	public String toString(City[] cities) {
@@ -208,5 +214,15 @@ public class Path implements Serializable {
 		return new Path(r, calculateLength(r, distances));
 	}
 	
-	
+	private void writeObject(ObjectOutputStream out) throws IOException {
+	    out.writeBoolean(this.marked);
+	    out.writeDouble(this.distance);
+	    VariableByteEncoding.writeVInts(out, path);
+	}
+
+	private void readObject(ObjectInputStream in) throws IOException {
+	    this.marked=in.readBoolean();
+	    this.distance=in.readDouble();
+	    this.path=VariableByteEncoding.readVInts(in);
+	}
 }

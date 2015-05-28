@@ -10,8 +10,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.broadcast.Broadcast;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
@@ -19,7 +19,7 @@ import com.google.common.collect.TreeRangeMap;
 
 public class Evolution {
 	
-	private static final int POPULATION_SIZE=10000;
+	static int POPULATION_SIZE=10000;
 
 	public static List<Path> generateRandomGeneration(int numberOfCities, double[][] distances) {
 		ArrayList<Path> generation=new ArrayList<>(POPULATION_SIZE);
@@ -28,7 +28,7 @@ public class Evolution {
     	return generation;
 	}
 
-	public static JavaRDD<Path> selectionCrossOver(JavaRDD<Path> generation, final double[][] distances, int numberOfCities) {
+	public static JavaRDD<Path> selectionCrossOver(JavaRDD<Path> generation, final Broadcast<double[][]> distances, int numberOfCities) {
 		//select and cross over in each partition
 		generation = generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
 			@SuppressWarnings("null")
@@ -61,7 +61,7 @@ public class Evolution {
 					nextGeneration.add(
 							list.get(r.nextDouble()*probabilityCounter).cross(
 									list.get(r.nextDouble()*probabilityCounter),
-									distances));
+									distances.getValue()));
 				}
 				
 				//add elite at the end
@@ -76,19 +76,19 @@ public class Evolution {
 	}
 	
 	@SuppressWarnings("serial")
-	public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final double[][] distances) {
+	public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final Broadcast<double[][]> distances) {
 		//select and cross over in each partition
 		generation = generation.map((new Function<Path, Path>() {
 			@Override
 			public Path call(Path p) throws Exception {
-				return p.mutate(distances);
+				return p.mutate(distances.getValue());
 			}
 		}));
 		
 		return generation;
 	}
 
-	public static JavaRDD<Path> tournamentShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
+	public static JavaRDD<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
 		generation=generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
 			@Override
 			public Iterable<Path> call(Iterator<Path> it) throws Exception {
@@ -116,6 +116,8 @@ public class Evolution {
 			}
 		}).cache();
 		
+		JavaRDD<Path> cached = generation;
+		
 		int numberOfPartitions=generation.partitions().size();
 		
 		List<Path> selected = generation.filter(new Function<Path, Boolean>() {
@@ -128,47 +130,14 @@ public class Evolution {
 		Collections.shuffle(selected);
 		for(Path p:selected)
 			p.setMarked(false);
-		return generation.filter(new Function<Path, Boolean>() {
+		generation=generation.filter(new Function<Path, Boolean>() {
 			@Override
 			public Boolean call(Path v1) throws Exception {
 				return !v1.isMarked();
 			}
 		}).union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
-	} 
-	
-	/**public static JavaRDD<Path> mutate(JavaRDD<Path> generation, final double[][] distances, int numberOfCities) {
-		//select and cross over in each partition
-		generation = generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
-			@SuppressWarnings("null")
-			@Override
-			public Iterable<Path> call(Iterator<Path> t) throws Exception {
-				//collect paths to rangemap that maps probability to path
-				Path elite=null;
-				List<Path> paths;
-				int counter = 0;
-				
-				while(t.hasNext()) {
-					Path p=t.next();
-					
-					if(elite==null || p.getLength()<elite.getLength())
-						elite=p;
-
-					paths.add(p);
-				}
-				
-				for(p : paths) {
-					if(!elite == p) 
-						p.mutate
-					nextGeneration.add(p);
-				}
-				
-							
-				return nextGeneration;
-			}
-		}, true); //true -> preserve partitions
-		
+		cached.unpersist();
 		return generation;
-	} */
-
+	} 
 	
 }
