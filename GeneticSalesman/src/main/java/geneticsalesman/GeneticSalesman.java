@@ -5,6 +5,7 @@ import geneticsalesman.evolution.Evolution;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URISyntaxException;
 
 import org.apache.spark.SparkConf;
@@ -18,7 +19,7 @@ public class GeneticSalesman {
 	private final static double STOP_WHEN_GOOD_ENOUGH = 0.98;
 	private final static boolean TOURNAMENT_SHUFFLE = false;
 
-	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException, InterruptedException {
 		String outPath;
 		if(args.length == 2)
 			outPath = args[1]+"/";
@@ -38,10 +39,12 @@ public class GeneticSalesman {
 		    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
 		    config.set("spark.hadoop.validateOutputSpecs", "false");
 		    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
-		    	System.out.println("Default Parallelism:\t"+ctx.sc().defaultParallelism());
-		    	System.out.println("Executor Size:\t"+ctx.sc().getExecutorStorageStatus().length);
-		    	Evolution.POPULATION_SIZE*=ctx.sc().defaultParallelism()/Math.sqrt(problem.getSize());
-		    	System.out.println("Population Size:\t"+Evolution.POPULATION_SIZE);
+		    	Thread.sleep(2000);
+		    	out("Default Parallelism:\t"+ctx.sc().defaultParallelism(), writer);
+		    	out("Executor Size:\t"+ctx.sc().getExecutorStorageStatus().length, writer);
+		    	out("Executor mem size:\t"+ctx.sc().getExecutorMemoryStatus().size(), writer);
+		    	//Evolution.POPULATION_SIZE*=/*ctx.sc().defaultParallelism()*/2d/Math.sqrt(problem.getSize());
+		    	out("Population Size:\t"+Evolution.POPULATION_SIZE, writer);
 		    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 		    	Broadcast<double[][]> distanceBroadcast = ctx.broadcast(problem.getDistances());
 		    	JavaRDD<Path> lastGeneration=null;
@@ -50,7 +53,7 @@ public class GeneticSalesman {
 		    	
 		    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
 		    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
-		    		System.out.println("Generation "+(QUICK_GENERATIONS*i)+":");
+		    		out("Generation "+(QUICK_GENERATIONS*i)+":", writer);
 		    		
 		    		
 		    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, distanceBroadcast);
@@ -74,18 +77,17 @@ public class GeneticSalesman {
 		    		long timeDiff = (System.nanoTime()-time)/1000000000L;
 		    		double percentage = problem.getOptimal().getLength()/globalBest.getLength()*100;
 		    		
-		    		writer.write(generationNumber + ","+ timeDiff + "," + percentage + "\n");
-		    		System.out.println("\t"+percentage);
+		    		out(generationNumber + ","+ timeDiff + "," + percentage, writer);
 		    	}
 		    	
-		    	System.out.println("Took: "+(System.nanoTime()-time)*1000000000 + "s");
+		    	out("Took: "+(System.nanoTime()-time)*1000000000 + "s", writer);
 		    	
-		    	System.out.println("Found:\t"+globalBest);
+		    	out("Found:\t"+globalBest, writer);
 		    	if(problem.getOptimal()!=null) {
-		    		System.out.println("Opt.:\t"+problem.getOptimal());
-		    		System.out.println("Found Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()));
+		    		out("Opt.:\t"+problem.getOptimal(), writer);
+		    		out("Found Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()), writer);
 		    	}
-		    	System.out.println("Required:\t"+((System.nanoTime()-time)/1000000l)+" ms");
+		    	out("Required:\t"+((System.nanoTime()-time)/1000000l)+" ms", writer);
 		    	//export result
 		    	
 		    	try(BufferedWriter kmlWriter =  Helper.Output.writer(outPath + "out.kml")) { 
@@ -93,5 +95,11 @@ public class GeneticSalesman {
 		    	}
 		    }
 	    }
+	}
+	
+	public static void out(String text, Writer writer) throws IOException {
+		writer.write(text + "\n");
+		writer.flush();
+		System.out.println(text);
 	}
 }
