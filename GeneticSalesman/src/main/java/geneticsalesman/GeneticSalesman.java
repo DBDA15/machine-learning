@@ -5,8 +5,11 @@ import geneticsalesman.evolution.Evolution;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
+import org.apache.commons.math.stat.descriptive.rank.Median;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -41,24 +44,22 @@ public class GeneticSalesman {
 		    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
 		    config.set("spark.hadoop.validateOutputSpecs", "false");
 		    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
-		    	System.out.println("Default Parallelism:\t"+ctx.sc().defaultParallelism());
-		    	System.out.println("Executor Size:\t"+ctx.sc().getExecutorStorageStatus().length);
-		    	Evolution.POPULATION_SIZE*=ctx.sc().defaultParallelism()/Math.sqrt(problem.getSize());
-		    	System.out.println("Population Size:\t"+Evolution.POPULATION_SIZE);
-		    	JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
+		    	Evolution.POPULATION_SIZE/=Math.sqrt(problem.getSize());
+		    	out("Population Size:\t"+Evolution.POPULATION_SIZE, writer);
+				JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 		    	Broadcast<double[][]> distanceBroadcast = ctx.broadcast(problem.getDistances());
 		    	
 		    	int[] requiredMS=new int[NUMBER_OF_RUNS];
 		    	
 		    	for(int testRun=0;testRun<NUMBER_OF_RUNS;testRun++) {
-		    		out
+		    		out("Testrun "+testRun, writer);
 			    	JavaRDD<Path> lastGeneration=null;
 			    	Path globalBest = null;
 			    	long time=System.nanoTime();
 			    	
 			    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
 			    	for(int i=0;globalBest==null || problem.getOptimal().getLength()/globalBest.getLength()<STOP_WHEN_GOOD_ENOUGH;i++) {
-			    		System.out.println("\tGeneration "+(QUICK_GENERATIONS*i)+":");
+			    		out("\tGeneration "+(QUICK_GENERATIONS*i)+":", writer);
 			    		
 			    		
 			    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, distanceBroadcast);
@@ -83,23 +84,39 @@ public class GeneticSalesman {
 			    		double percentage = problem.getOptimal().getLength()/globalBest.getLength()*100;
 			    		
 			    		writer.write("\t"+generationNumber + ","+ timeDiff + "," + percentage + "\n");
-			    		System.out.println("\t\t"+percentage);
+			    		out("\t\t"+percentage, writer);
 			    	}
 			    	
-			    	System.out.println("\tFound:\t"+globalBest);
+			    	out("\tFound:\t"+globalBest, writer);
 			    	if(problem.getOptimal()!=null) {
-			    		System.out.println("\tOpt.:\t"+problem.getOptimal());
-			    		System.out.println("\tFound Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()));
+			    		out("\tOpt.:\t"+problem.getOptimal(), writer);
+			    		out("\tFound Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()), writer);
 			    	}
 			    	requiredMS[testRun]=Ints.checkedCast((System.nanoTime()-time)/1000000l);
-			    	System.out.println("\tRequired:\t"+requiredMS[testRun]+" ms");
+			    	out("\tRequired:\t"+requiredMS[testRun]+" ms", writer);
 			    	//export result
 			    	
 			    	try(BufferedWriter kmlWriter =  Helper.Output.writer(outPath + "out"+testRun+".kml")) { 
 			    		Helper.KMLExport.exportPath(globalBest, problem, kmlWriter);
-			    	}
+		    		}
 			    }
+		    	
+		    	out("Median Time:\t"+median(requiredMS)+"ms", writer);
 		    }
 	    }
+	}
+	
+	public static int median(int[] values) {
+		Arrays.sort(values);
+		if (values.length % 2 == 0)
+		    return (values[values.length/2] + values[values.length/2 - 1])/2;
+		else
+		    return values[values.length/2];
+	}
+	
+	public static void out(String text, Writer writer) throws IOException {
+		writer.write(text + "\n");
+		writer.flush();
+		System.out.println(text);
 	}
 }
