@@ -123,6 +123,8 @@ public class Path implements Serializable {
 			if(modificationDecider<0.33) {
 				swapSequenceMutation(r, newPath);	
 			}
+			
+			
 			else if(modificationDecider<0.66){
 				swapSinglePairMutation(r, newPath);
 			}
