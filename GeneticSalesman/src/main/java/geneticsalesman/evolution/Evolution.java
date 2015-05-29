@@ -7,16 +7,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
+import org.apache.spark.Accumulable;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
+import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
 
 public class Evolution {
@@ -31,11 +32,14 @@ public class Evolution {
 	}
 
 	public static JavaRDD<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
+		final Accumulable<List<Path>, Path> best=ctx.accumulable(new ArrayList<Path>(), "Roulette Shuffle", ListCollector.getInstance());
+		
+		
 		generation=generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
 			@Override
 			public Iterable<Path> call(Iterator<Path> it) throws Exception {
 				//collect paths to rangemap that maps probability to path
-				List<Path> l=Lists.newArrayList(it);
+				Set<Path> l=Sets.newHashSet(it);
 				Path elite=null;
 				RangeMap<Double, Path> list=TreeRangeMap.create();
 				double probabilityCounter=0;
@@ -51,33 +55,27 @@ public class Evolution {
 				
 				//select some
 				Random r=new Random();
-				for(int i=0;i<5;i++)
-					list.get(r.nextDouble()*probabilityCounter).setMarked(true);
+				for(int i=0;i<5;i++) {
+					Path e=list.get(r.nextDouble()*probabilityCounter);
+					best.add(e);
+					l.remove(e);
+				}
 				
 				return l;
 			}
 		}).cache();
 		
+		generation.count();
+		
 		JavaRDD<Path> cached = generation;
 		
 		int numberOfPartitions=generation.partitions().size();
 		
-		List<Path> selected = generation.filter(new Function<Path, Boolean>() {
-			@Override
-			public Boolean call(Path v1) throws Exception {
-				return v1.isMarked();
-			}
-		}).collect();
+		List<Path> selected=best.value();
 		
 		Collections.shuffle(selected);
-		for(Path p:selected)
-			p.setMarked(false);
-		generation=generation.filter(new Function<Path, Boolean>() {
-			@Override
-			public Boolean call(Path v1) throws Exception {
-				return !v1.isMarked();
-			}
-		}).union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
+		
+		generation=generation.union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
 		cached.unpersist();
 		return generation;
 	}
