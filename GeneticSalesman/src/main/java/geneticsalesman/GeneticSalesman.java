@@ -9,7 +9,6 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
-import org.apache.commons.math.stat.descriptive.rank.Median;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -41,7 +40,7 @@ public class GeneticSalesman {
 		    
 		   
 		    // initialize spark environment
-		    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getName());
+		    SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getSimpleName()+" on "+(int)(Evolution.POPULATION_SIZE/Math.sqrt(problem.getSize()))+" @ "+citiesFile);
 		    config.set("spark.hadoop.validateOutputSpecs", "false");
 		    try(JavaSparkContext ctx = new JavaSparkContext(config)) {
 		    	Evolution.POPULATION_SIZE/=Math.sqrt(problem.getSize());
