@@ -9,11 +9,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.spark.Accumulable;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.broadcast.Broadcast;
+import org.apache.flink.api.java.DataSet;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
@@ -31,7 +27,7 @@ public class Evolution {
     	return generation;
 	}
 
-	public static JavaRDD<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
+	/*public static DataSet<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
 		final Accumulable<List<Path>, Path> best=ctx.accumulable(new ArrayList<Path>(), "Roulette Shuffle", ListCollector.getInstance());
 		
 		
@@ -78,10 +74,10 @@ public class Evolution {
 		generation=generation.union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
 		cached.unpersist();
 		return generation;
-	}
+	}*/
 
-	public static JavaRDD<Path> evolve(JavaRDD<Path> generation, int generations, final Broadcast<double[][]> distances) {
-		return generation.mapPartitions(Evolver.getInstance(generations, distances), true);
+	public static DataSet<Path> evolve(DataSet<Path> generation, int generations, int nextGenerationNumber, double[][] distances) {
+		return generation.mapPartition(new Evolver(generations, distances, nextGenerationNumber));
 	} 
 	
 }

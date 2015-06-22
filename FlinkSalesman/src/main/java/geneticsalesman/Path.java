@@ -1,8 +1,5 @@
 package geneticsalesman;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,9 +9,12 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.primitives.Ints;
 
-public class Path implements Serializable {
+public class Path implements Comparable<Path> {
 	private int[] path;
 	private double distance;
 	private boolean marked;
@@ -214,15 +214,26 @@ public class Path implements Serializable {
 		return new Path(r, calculateLength(r, distances));
 	}
 	
-	private void writeObject(ObjectOutputStream out) throws IOException {
-	    out.writeBoolean(this.marked);
-	    out.writeDouble(this.distance);
-	    VariableByteEncoding.writeVInts(out, path);
+	@Override
+	public int compareTo(Path o) {
+		return Double.compare(getLength(), o.getLength());
 	}
+	
+	public static class Serializer extends com.esotericsoftware.kryo.Serializer<Path>{
+		@Override
+		public void write(Kryo kryo, Output output, Path p) {
+			output.writeBoolean(p.marked);
+			output.writeDouble(p.distance);
+			VariableByteEncoding.writeVInts(output, p.path);
+		}
 
-	private void readObject(ObjectInputStream in) throws IOException {
-	    this.marked=in.readBoolean();
-	    this.distance=in.readDouble();
-	    this.path=VariableByteEncoding.readVInts(in);
+		@Override
+		public Path read(Kryo kryo, Input input, Class<Path> type) {
+			boolean marked=input.readBoolean();
+			double dist=input.readDouble();
+			Path p=new Path(VariableByteEncoding.readVInts(input), dist);
+			p.marked=marked;
+			return p;
+		}
 	}
 }
