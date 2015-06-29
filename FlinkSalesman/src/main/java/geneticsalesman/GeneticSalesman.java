@@ -49,6 +49,7 @@ public class GeneticSalesman {
 			outPath = args[1]+"/";
 		else
 			outPath = "";
+		
 		try (BufferedWriter writer = Helper.Output.writer(outPath + "out.txt")) {
 			double[] resultPercentages = new double[pairs.length];
 			for(int i=0;i<pairs.length;i++) {
@@ -70,10 +71,7 @@ public class GeneticSalesman {
 		try(InputParser in=new InputParser()) {
 			problem=in.parse(citiesFile);
 		}
-		
-   
-		// initialize flink environment
-		final ExecutionEnvironment env=ExecutionEnvironment.createLocalEnvironment();
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
 		//or ExecutionEnvironment.createRemoteEnvironment(String host, int port, String... jarFiles)
