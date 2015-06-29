@@ -5,10 +5,12 @@ import geneticsalesman.statistics.SPoint;
 import geneticsalesman.statistics.StatisticsAccumulator;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.ToIntFunction;
 
 import org.apache.flink.api.common.functions.RichMapPartitionFunction;
 import org.apache.flink.configuration.Configuration;
@@ -26,16 +28,16 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 	private int nextGenerationNumber;
 	private static double[][] distances;
 	
-	public Evolver(int generations, double[][] distances, int nextGenerationNumber) {
-		this.nextGenerationNumber=nextGenerationNumber;
+	public Evolver(int generations, double[][] distances) {
 		this.generations=generations;
-		this.distances=distances;
+		Evolver.distances=distances;
 	}
 	
 	@Override
 	public void open(Configuration parameters) throws Exception {
 		statisticsAccumulator=new StatisticsAccumulator();
 		getRuntimeContext().addAccumulator(StatisticsAccumulator.NAME, statisticsAccumulator);
+		nextGenerationNumber=getIterationRuntimeContext().getSuperstepNumber()*generations;
 	}
 	
 	@Override
@@ -43,37 +45,45 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 		
 		List<Path> currentGen=Lists.newArrayList(t);
 		
+		Path best = selectBest(currentGen);
+		
+		if(nextGenerationNumber==generations && best!=null)
+			statisticsAccumulator.add(new SPoint(System.currentTimeMillis(), best, nextGenerationNumber));
+		
 		//do more than one generation at once
 		for(int gen=0;gen<generations;gen++) {
+			best = selectBest(currentGen);
 			currentGen=rouletteCrossOver(currentGen);
 			
 			ListIterator<Path> it=currentGen.listIterator();
 			while(it.hasNext())
 				it.set(it.next().mutate(distances));
+			currentGen.add(best);
 		}
 		
-		Path best=null;
-		
-		for(Path p:currentGen) {
-			if(best==null || p.getLength()<best.getLength())
-				best=p;
-			out.collect(p);
-		}
+		best = selectBest(currentGen);
 		if(best!=null)
 			statisticsAccumulator.add(new SPoint(System.currentTimeMillis(), best, nextGenerationNumber));
+		for(Path p:currentGen)
+			out.collect(p);
 		out.close();
 	}
 	
+	private Path selectBest(Collection<Path> currentGen) {
+		Path best=null;
+		for(Path p:currentGen) {
+			if(best==null || p.getLength()<best.getLength())
+				best=p;
+		}
+		return best;
+	}
+
 	private List<Path> rouletteCrossOver(List<Path> lastGen) {
 		//collect paths to rangemap that maps probability to path
-		Path elite=null;
 		RangeMap<Double, Path> list=TreeRangeMap.create();
 		double probabilityCounter=0;
 		
 		for(Path p:lastGen) {
-			if(elite==null || p.getLength()<elite.getLength())
-				elite=p;
-			
 			double prob=1000/p.getLength();
 			list.put(Range.closed(probabilityCounter, probabilityCounter+prob), p);
 			probabilityCounter+=prob;
@@ -89,11 +99,6 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 							distances));
 		}
 		
-		//add elite at the end
-		if(elite!=null) {
-			elite.setMarked(true);
-			nextGeneration.add(elite);
-		}
 		return nextGeneration;
 	}
 }

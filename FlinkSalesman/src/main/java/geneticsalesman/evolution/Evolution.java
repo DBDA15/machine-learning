@@ -8,9 +8,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.MapPartitionFunction;
+import org.apache.flink.api.common.functions.Partitioner;
+import org.apache.flink.api.common.functions.RichMapPartitionFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.operators.FilterOperator;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.util.Collector;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
@@ -27,57 +37,59 @@ public class Evolution {
     	return generation;
 	}
 
-	/*public static DataSet<Path> rouletteShuffle(JavaRDD<Path> generation, JavaSparkContext ctx) {
-		final Accumulable<List<Path>, Path> best=ctx.accumulable(new ArrayList<Path>(), "Roulette Shuffle", ListCollector.getInstance());
-		
-		
-		generation=generation.mapPartitions(new FlatMapFunction<Iterator<Path>, Path>() {
+	public static DataSet<Path> rouletteShuffle(DataSet<Path> generation) {
+		/*generation=generation.mapPartition(new MapPartitionFunction<Path, Path>() {
 			@Override
-			public Iterable<Path> call(Iterator<Path> it) throws Exception {
-				//collect paths to rangemap that maps probability to path
-				Set<Path> l=Sets.newHashSet(it);
-				Path elite=null;
-				RangeMap<Double, Path> list=TreeRangeMap.create();
-				double probabilityCounter=0;
+			public void mapPartition(Iterable<Path> values, Collector<Path> out) {
+				List<Path> l=Lists.newArrayList(values);
+				Random r=ThreadLocalRandom.current();
+				int partitionId=r.nextInt(Integer.MAX_VALUE);
 				
-				for(Path p:l) {
-					if(elite==null || p.getLength()<elite.getLength())
-						elite=p;
-					
-					double prob=1000/p.getLength();
-					list.put(Range.closed(probabilityCounter, probabilityCounter+prob), p);
-					probabilityCounter+=prob;
-				}
-				
-				//select some
-				Random r=new Random();
-				for(int i=0;i<5;i++) {
-					Path e=list.get(r.nextDouble()*probabilityCounter);
-					best.add(e);
-					l.remove(e);
-				}
-				
-				return l;
+				for(Path p:l)
+					p.setMark(partitionId);
+				for(int i=0;i<5;i++)
+					l.get(r.nextInt(l.size())).setMark(r.nextInt(Integer.MAX_VALUE));
+				for(Path p:l)
+					out.collect(p);
 			}
-		}).cache();
-		
-		generation.count();
-		
-		JavaRDD<Path> cached = generation;
-		
-		int numberOfPartitions=generation.partitions().size();
-		
-		List<Path> selected=best.value();
-		
-		Collections.shuffle(selected);
-		
-		generation=generation.union(ctx.parallelize(selected)).coalesce(numberOfPartitions, false);
-		cached.unpersist();
+		}).partitionByHash(new KeySelector<Path, Integer>() {
+			@Override
+			public Integer getKey(Path value) throws Exception {
+				return value.getMark();
+			}
+			
+		});*/
+		generation=generation.mapPartition(new MapPartitionFunction<Path, Path>() {
+			@Override
+			public void mapPartition(Iterable<Path> values, Collector<Path> out) {
+				List<Path> l=Lists.newArrayList(values);
+				Random r=ThreadLocalRandom.current();
+				
+				for(Path p:l)
+					p.setMark(0);
+				for(int i=0;i<5;i++)
+					l.get(r.nextInt(l.size())).setMark(1);
+				for(Path p:l)
+					out.collect(p);
+			}
+		});
+		FilterOperator<Path> marked = generation.filter(new FilterFunction<Path>() {
+			@Override
+			public boolean filter(Path value) throws Exception {
+				return value.getMark()==1;
+			}
+		});
+		generation=generation.filter(new FilterFunction<Path>() {
+			@Override
+			public boolean filter(Path value) throws Exception {
+				return value.getMark()==0;
+			}
+		}).union(marked);
 		return generation;
-	}*/
+	}
 
-	public static DataSet<Path> evolve(DataSet<Path> generation, int generations, int nextGenerationNumber, double[][] distances) {
-		return generation.mapPartition(new Evolver(generations, distances, nextGenerationNumber));
+	public static DataSet<Path> evolve(DataSet<Path> generation, int generations, double[][] distances) {
+		return generation.mapPartition(new Evolver(generations, distances));
 	} 
 	
 }

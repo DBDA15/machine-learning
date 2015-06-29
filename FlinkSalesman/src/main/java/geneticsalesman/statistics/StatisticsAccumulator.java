@@ -1,9 +1,5 @@
 package geneticsalesman.statistics;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
 import org.apache.flink.api.common.accumulators.Accumulator;
 
 public class StatisticsAccumulator implements Accumulator<SPoint, Statistics> {
@@ -24,20 +20,6 @@ public class StatisticsAccumulator implements Accumulator<SPoint, Statistics> {
 	@Override
 	public void resetLocal() {
 		current=new Statistics();
-	}
-
-	@Override
-	public void write(ObjectOutputStream oos) throws IOException {
-		oos.writeObject(current);
-	}
-
-	@Override
-	public void read(ObjectInputStream ois) throws IOException {
-		try {
-			current=(Statistics) ois.readObject();
-		} catch (ClassNotFoundException e) {
-			throw new Error(e);
-		}
 	}
 
 	@Override

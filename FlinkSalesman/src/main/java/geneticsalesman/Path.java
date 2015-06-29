@@ -14,10 +14,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.primitives.Ints;
 
-public class Path implements Comparable<Path> {
+public class Path implements Comparable<Path>, Serializable {
 	private int[] path;
 	private double distance;
-	private boolean marked;
+	private int mark;
 	
 	Path(int[] path, double distance) {
 		this.path=path;
@@ -118,7 +118,7 @@ public class Path implements Comparable<Path> {
 		int[] newPath = Arrays.copyOf(path, path.length);
 		double newDistance = distance;
 		
-		while(!marked && r.nextDouble()<0.6) {
+		while(r.nextDouble()<0.6) {
 			double modificationDecider = r.nextDouble();
 			if(modificationDecider<0.33) {
 				swapSequenceMutation(r, newPath);	
@@ -201,12 +201,12 @@ public class Path implements Comparable<Path> {
 		return newPath;
 	}
 
-	public boolean isMarked() {
-		return marked;
+	public int getMark() {
+		return mark;
 	}
 	
-	public void setMarked(boolean marked) {
-		this.marked = marked;
+	public void setMark(int mark) {
+		this.mark = mark;
 	}
 
 	public static Path createNormalizedPath(int[] p, double[][] distances) {
@@ -222,17 +222,17 @@ public class Path implements Comparable<Path> {
 	public static class Serializer extends com.esotericsoftware.kryo.Serializer<Path>{
 		@Override
 		public void write(Kryo kryo, Output output, Path p) {
-			output.writeBoolean(p.marked);
+			VariableByteEncoding.writeVNumber(output,  p.mark);
 			output.writeDouble(p.distance);
 			VariableByteEncoding.writeVInts(output, p.path);
 		}
 
 		@Override
 		public Path read(Kryo kryo, Input input, Class<Path> type) {
-			boolean marked=input.readBoolean();
+			int mark=VariableByteEncoding.readVInt(input);
 			double dist=input.readDouble();
 			Path p=new Path(VariableByteEncoding.readVInts(input), dist);
-			p.marked=marked;
+			p.mark=mark;
 			return p;
 		}
 	}

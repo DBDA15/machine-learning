@@ -15,13 +15,13 @@ public class SPoint implements Serializable {
 		this.best = best;
 		this.generation = generation;
 	}
-	protected long getTime() {
+	public long getTime() {
 		return time;
 	}
-	protected Path getBest() {
+	public Path getBest() {
 		return best;
 	}
-	protected int getGeneration() {
+	public int getGeneration() {
 		return generation;
 	}
 	

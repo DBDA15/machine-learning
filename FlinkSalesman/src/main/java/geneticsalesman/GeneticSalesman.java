@@ -5,28 +5,19 @@ import geneticsalesman.statistics.Statistics;
 import geneticsalesman.statistics.StatisticsAccumulator;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.io.InputFormat;
-import org.apache.flink.api.common.io.statistics.BaseStatistics;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.ReduceOperator;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.core.io.InputSplitAssigner;
+import org.apache.flink.api.java.operators.IterativeDataSet;
+import org.slf4j.LoggerFactory;
 
 public class GeneticSalesman {
 	
-	private final static boolean TOURNAMENT_SHUFFLE = false;
+	private final static boolean TOURNAMENT_SHUFFLE = true;
 	private static final int NUMBER_OF_RUNS = 1;
 	private static final int QUICK_GENERATIONS = 100;
 	
@@ -76,6 +67,7 @@ public class GeneticSalesman {
 		final ExecutionEnvironment env=ExecutionEnvironment.createLocalEnvironment();
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
+		env.getConfig().disableSysoutLogging();
 		//or ExecutionEnvironment.createRemoteEnvironment(String host, int port, String... jarFiles)
 		double[] results = new double[NUMBER_OF_RUNS];
 		
@@ -85,34 +77,35 @@ public class GeneticSalesman {
 				.name("Generation 0");
 			long baseTime=System.currentTimeMillis();
 			out("Testrun "+testRun, writer);
+			
+			IterativeDataSet<Path> iterationStart=generation.iterate(pair.generations/QUICK_GENERATIONS);
+			generation=iterationStart;
 	    	
-	    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
-	    	for(int generationNumber=0; generationNumber<=pair.generations; generationNumber+=QUICK_GENERATIONS) {
+    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, problem.getDistances());
+    		
+    		if(TOURNAMENT_SHUFFLE)
+    			generation=Evolution.rouletteShuffle(generation);
+    		else
+    			generation=generation.partitionByHash(RandomSelector.<Path>getInstance());
 	    		
-	    		
-	    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, generationNumber+QUICK_GENERATIONS, problem.getDistances());
-	    		
-	    		/*if(TOURNAMENT_SHUFFLE) {
-	    			generation=Evolution.rouletteShuffle(generation, ctx);
-	    		}
-	    		else*/
-	    		
-	    		generation=generation.partitionByHash(RandomSelector.<Path>getInstance()).name("Generation "+(generationNumber+QUICK_GENERATIONS));
-	    		
-	    		/*ReduceOperator<Path> best = generation.reduce(MinReduce.getInstance());
-	    		best.print();*/
-	    	}
-	    	generation.filter(new FilterFunction<Path>() {
+	    	generation=iterationStart.closeWith(generation);
+	    	/*generation.filter(new FilterFunction<Path>() {
 				@Override
 				public boolean filter(Path value) throws Exception {
 					return false;
 				}
-			}).print();
+			}).print();*/
+	    	generation.reduce(MinReduce.getInstance()).printOnTaskManager("BEST:\t");
 	    	//results[testRun] = problem.getOptimal().getLength()/globalBest.getLength();
 	    	JobExecutionResult res=env.execute("Genetic Salesman "+Evolution.POPULATION_SIZE+" quick generations");
 	    	
 	    	Statistics result=(Statistics)res.getAccumulatorResult(StatisticsAccumulator.NAME);
-	    	out(result.toString(problem.getOptimal().getLength(), baseTime), writer);
+	    	out("\n"+result.toString(problem.getOptimal().getLength(), baseTime), writer);
+	    	
+	    	long[] timeNeeded=new long[result.getPoints().size()-1];
+	    	for(int i=0;i<timeNeeded.length;i++)
+	    		timeNeeded[i]=result.getPoints().get(i+1).getTime()-result.getPoints().get(i).getTime();
+	    	out("Median Time/Generation:\t"+(float)median(timeNeeded)/QUICK_GENERATIONS, writer);
 	    	/*
 	    	out("\tFound:\t"+globalBest, writer);
 	    	if(problem.getOptimal()!=null) {
@@ -145,10 +138,18 @@ public class GeneticSalesman {
 		    return progressesForGen[progressesForGen.length/2];
 	}
 	
+	public static long median(long[] progressesForGen) {
+		Arrays.sort(progressesForGen);
+		if (progressesForGen.length % 2 == 0)
+		    return (progressesForGen[progressesForGen.length/2] + progressesForGen[progressesForGen.length/2 - 1])/2;
+		else
+		    return progressesForGen[progressesForGen.length/2];
+	}
+	
 	
 	public static void out(String text, Writer writer) throws IOException {
 		writer.write(text + "\n");
 		writer.flush();
-		System.out.println(text);
+		LoggerFactory.getLogger(GeneticSalesman.class).warn(text);
 	}
 }

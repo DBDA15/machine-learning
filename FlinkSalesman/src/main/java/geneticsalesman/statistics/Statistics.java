@@ -75,4 +75,8 @@ public class Statistics implements Serializable {
 		}
 		
 	}
+
+	public List<SPoint> getPoints() {
+		return points;
+	}
 }
