@@ -87,12 +87,7 @@ public class GeneticSalesman {
     			generation=generation.partitionByHash(RandomSelector.<Path>getInstance());
 	    		
 	    	generation=iterationStart.closeWith(generation);
-	    	/*generation.filter(new FilterFunction<Path>() {
-				@Override
-				public boolean filter(Path value) throws Exception {
-					return false;
-				}
-			}).print();*/
+
 	    	generation.reduce(MinReduce.getInstance()).printOnTaskManager("BEST:\t");
 	    	//results[testRun] = problem.getOptimal().getLength()/globalBest.getLength();
 	    	JobExecutionResult res=env.execute("Genetic Salesman "+Evolution.POPULATION_SIZE+" quick generations");

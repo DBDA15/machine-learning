@@ -9,6 +9,8 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntHashSet;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -70,13 +72,18 @@ public class Path implements Comparable<Path>, Serializable {
 
 	public Path cross(Path p2, double[][] distances) {
 		int cuttingPoint=ThreadLocalRandom.current().nextInt(path.length);
-		LinkedHashSet<Integer> set=new LinkedHashSet<>(path.length);
-		for(int i=0;i<cuttingPoint;i++)
-			set.add(path[i]);
-		for(int v:p2.path)
-			if(set.add(v)); //add all missing elements in the order of p2
-				
-		int[] p=normalize(Ints.toArray(set));
+		IntArrayList l=new IntArrayList(p2.path.length);
+		IntHashSet s=new IntHashSet(p2.path.length);
+		for(int i=0;i<cuttingPoint;i++) {
+			l.add(path[i]);
+			s.add(path[i]);
+		}
+		for(int v:p2.path) {
+			if(s.add(v)) //add all missing elements in the order of p2
+				l.add(v);
+		}
+
+		int[] p=normalize(l.toArray());
 		return new Path(p, calculateLength(p, distances));
 	}
 	
