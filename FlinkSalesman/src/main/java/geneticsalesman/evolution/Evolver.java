@@ -43,11 +43,12 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 	public void mapPartition(Iterable<Path> t, Collector<Path> out) throws Exception {
 		
 		List<Path> currentGen=Lists.newArrayList(t);
+		System.out.println("Gen "+nextGenerationNumber+"\t"+currentGen.size());
 		
 		Path best = selectBest(currentGen);
 		
 		if(nextGenerationNumber==generations && best!=null)
-			statisticsAccumulator.add(new SPoint(System.currentTimeMillis(), best, nextGenerationNumber));
+			statisticsAccumulator.add(new SPoint(System.currentTimeMillis(), best, 0));
 		
 		//do more than one generation at once
 		for(int gen=0;gen<generations;gen++) {
