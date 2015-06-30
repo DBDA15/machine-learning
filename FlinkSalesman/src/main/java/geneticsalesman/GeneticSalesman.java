@@ -30,6 +30,7 @@ public class GeneticSalesman {
 	}
 
 	public static void main(String[] args) throws Exception {
+		System.out.println(Arrays.toString(args));
 		Config config=new Config();
 		new JCommander(config, args);
 		try (BufferedWriter writer = Helper.Output.writer(new File(config.getOutPath(), "out.txt").getAbsolutePath())) {
