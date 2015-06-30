@@ -43,7 +43,7 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 	public void mapPartition(Iterable<Path> t, Collector<Path> out) throws Exception {
 		
 		List<Path> currentGen=Lists.newArrayList(t);
-		System.out.println("Gen "+nextGenerationNumber+"\t"+currentGen.size());
+		//System.out.println("Gen "+nextGenerationNumber+"\t"+currentGen.size());
 		
 		Path best = selectBest(currentGen);
 		
