@@ -25,11 +25,11 @@ public class Evolver extends RichMapPartitionFunction<Path, Path> {
 	private int generations;
 	private StatisticsAccumulator statisticsAccumulator;
 	private int nextGenerationNumber;
-	private static double[][] distances;
+	private double[][] distances;
 	
 	public Evolver(int generations, double[][] distances) {
 		this.generations=generations;
-		Evolver.distances=distances;
+		this.distances=distances;
 	}
 	
 	@Override

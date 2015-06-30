@@ -99,18 +99,6 @@ public class GeneticSalesman {
 	    	for(int i=0;i<timeNeeded.length;i++)
 	    		timeNeeded[i]=result.getPoints().get(i+1).getTime()-result.getPoints().get(i).getTime();
 	    	out("Median Time/Generation:\t"+(float)median(timeNeeded)/QUICK_GENERATIONS, writer);
-	    	/*
-	    	out("\tFound:\t"+globalBest, writer);
-	    	if(problem.getOptimal()!=null) {
-	    		out("\tOpt.:\t"+problem.getOptimal(), writer);
-	    		out("\tFound Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()), writer);
-	    	}
-	    	out("\tRequired:\t"+progressOfTestRuns[testRun]+" ms", writer);
-	    	//export result
-	    	
-	    	try(BufferedWriter kmlWriter =  Helper.Output.writer(outPath + "out"+testRun+".kml")) { 
-	    		Helper.KMLExport.exportPath(globalBest, problem, kmlWriter);
-			}*/
 	    }
 		return median(results);
 	}
