@@ -94,7 +94,7 @@ public interface Helper {
 			}
 			else {
 				File file = new File(path);
-				if(path.contains("/"))
+				if(file.getParentFile()!=null)
 					file.getParentFile().mkdirs();
 				os = new FileOutputStream(file);
 			}

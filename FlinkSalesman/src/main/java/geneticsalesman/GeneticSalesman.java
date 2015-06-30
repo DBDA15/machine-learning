@@ -33,7 +33,7 @@ public class GeneticSalesman {
 		System.out.println(Arrays.toString(args));
 		Config config=new Config();
 		new JCommander(config, args);
-		try (BufferedWriter writer = Helper.Output.writer(new File(config.getOutPath(), "out.txt").getAbsolutePath())) {
+		try (BufferedWriter writer = Helper.Output.writer(config.getOutFile())) {
 			//double[] resultPercentages = new double[pairs.length];
 			/*for(int i=0;i<pairs.length;i++) {
 				out("---STARTING WITH PAIR", writer);
