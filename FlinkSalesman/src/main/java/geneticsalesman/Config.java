@@ -1,5 +1,7 @@
 package geneticsalesman;
 
+import java.util.List;
+
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
@@ -20,8 +22,8 @@ public class Config {
 	@Parameter(names="-exchange")
 	private String exchange=Exchange.SELECTED_RANDOM.name();
 	
-	@Parameter(names="-problem", required=true)
-	private String problem;
+	@Parameter(required=true)
+	private List<String> problem;
 	
 	@Parameter(names="-outPath")
 	private String outPath="";
@@ -42,7 +44,7 @@ public class Config {
 		return exchange;
 	}
 
-	public String getProblem() {
+	public List<String> getProblem() {
 		return problem;
 	}
 

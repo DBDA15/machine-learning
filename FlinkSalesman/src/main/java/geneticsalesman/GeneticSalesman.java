@@ -5,6 +5,7 @@ import geneticsalesman.statistics.Statistics;
 import geneticsalesman.statistics.StatisticsAccumulator;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
@@ -31,8 +32,7 @@ public class GeneticSalesman {
 	public static void main(String[] args) throws Exception {
 		Config config=new Config();
 		new JCommander(config, args);
-		
-		try (BufferedWriter writer = Helper.Output.writer(config.getOutPath() + "out.txt")) {
+		try (BufferedWriter writer = Helper.Output.writer(new File(config.getOutPath(), "out.txt").getAbsolutePath())) {
 			//double[] resultPercentages = new double[pairs.length];
 			/*for(int i=0;i<pairs.length;i++) {
 				out("---STARTING WITH PAIR", writer);
@@ -51,7 +51,7 @@ public class GeneticSalesman {
 		// get job parameters
 		final Problem problem;
 		try(InputParser in=new InputParser()) {
-			problem=in.parse(config.getProblem());
+			problem=in.parse(config.getProblem().get(0));
 		}
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
