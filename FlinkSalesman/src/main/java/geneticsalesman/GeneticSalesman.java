@@ -1,22 +1,24 @@
 package geneticsalesman;
 
-import geneticsalesman.evolution.Evolution;
-import geneticsalesman.statistics.Statistics;
-import geneticsalesman.statistics.StatisticsAccumulator;
-
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
 
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.functions.MapPartitionFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.IterativeDataSet;
+import org.apache.flink.util.Collector;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
+
+import geneticsalesman.evolution.Evolution;
+import geneticsalesman.statistics.Statistics;
+import geneticsalesman.statistics.StatisticsAccumulator;
+import io.netty.util.internal.ThreadLocalRandom;
 
 public class GeneticSalesman {
 	
@@ -54,17 +56,39 @@ public class GeneticSalesman {
 		try(InputParser in=new InputParser()) {
 			problem=in.parse(config.getProblem().get(0));
 		}
-		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		ExecutionEnvironment env;
+		if(config.getHost()==null)
+			env = ExecutionEnvironment.getExecutionEnvironment();
+		else {
+			String[] h=config.getHost().split(":");
+			env = ExecutionEnvironment.createRemoteEnvironment(
+					h[0], 
+					Integer.parseInt(h[1]), 
+					config.getJars().toArray(new String[config.getJars().size()]));
+		}
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
 		env.getConfig().disableSysoutLogging();
-		//or ExecutionEnvironment.createRemoteEnvironment(String host, int port, String... jarFiles)
 		double[] results = new double[config.getNumberOfRuns()];
 		
 		for(int testRun=0;testRun<config.getNumberOfRuns();testRun++) {
 			DataSet<Path> generation = env
 				.fromCollection(Evolution.generateRandomGeneration(config, problem.getSize(), problem.getDistances()))
-				.name("Generation 0");
+				.name("Generation 0")
+				.rebalance()
+				/*.mapPartition(new MapPartitionFunction<Path, Path>() {
+
+					@Override
+					public void mapPartition(Iterable<Path> values, Collector<Path> out) throws Exception {
+						int partitionId=ThreadLocalRandom.current().nextInt();
+						for(Path p:values) {
+							p.setPartitionId(partitionId);
+							out.collect(p);
+						}
+						out.close();
+					}
+					
+				})*/;
 			long baseTime=System.currentTimeMillis();
 			out("Testrun "+testRun, writer);
 			

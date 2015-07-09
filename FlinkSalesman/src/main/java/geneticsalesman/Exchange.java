@@ -1,7 +1,5 @@
 package geneticsalesman;
 
-import io.netty.util.internal.ThreadLocalRandom;
-
 import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
@@ -13,6 +11,8 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.util.Collector;
 
 import com.google.common.collect.Lists;
+
+import io.netty.util.internal.ThreadLocalRandom;
 
 public enum Exchange {
 	
@@ -51,21 +51,13 @@ public enum Exchange {
 					return value.getMark()==1;
 				}
 			});
+			marked=Exchange.ROUND_ROBIN.exchange(marked); //required or it will exchange nothing at all
 			generation=generation.filter(new FilterFunction<Path>() {
 				@Override
 				public boolean filter(Path value) throws Exception {
 					return value.getMark()==0;
 				}
-			}).union(marked).mapPartition(new MapPartitionFunction<Path, Path>() {
-
-				@Override
-				public void mapPartition(Iterable<Path> values, Collector<Path> out)
-						throws Exception {
-					List<Path> l=Lists.newArrayList(values);
-					for(Path p:l)
-						out.collect(p);
-				}
-			});
+			}).union(marked);
 			return generation;
 		}
 	};

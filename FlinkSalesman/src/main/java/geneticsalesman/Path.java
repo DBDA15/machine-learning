@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -14,7 +13,6 @@ import com.carrotsearch.hppc.IntHashSet;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.google.common.primitives.Ints;
 
 public class Path implements Comparable<Path>, Serializable {
 	private int[] path;
@@ -84,7 +82,8 @@ public class Path implements Comparable<Path>, Serializable {
 		}
 
 		int[] p=normalize(l.toArray());
-		return new Path(p, calculateLength(p, distances));
+		Path np=new Path(p, calculateLength(p, distances));
+		return np;
 	}
 	
 	private static class PathComparator implements Comparator<Path>, Serializable {
@@ -139,7 +138,8 @@ public class Path implements Comparable<Path>, Serializable {
 			newPath = normalize(newPath);
 		}
 		newDistance = calculateLength(newPath, distances);
-		return new Path(newPath, newDistance);
+		Path np=new Path(newPath, newDistance);
+		return np;
 	}
 
 	private void viceVersaMutation(Random r, int[] newPath) {

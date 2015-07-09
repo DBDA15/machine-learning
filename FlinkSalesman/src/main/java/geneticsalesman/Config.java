@@ -1,6 +1,5 @@
 package geneticsalesman;
 
-import java.io.File;
 import java.util.List;
 
 import com.beust.jcommander.Parameter;
@@ -28,6 +27,29 @@ public class Config {
 	
 	@Parameter(names="--outFile", required=true)
 	private String outFile;
+	
+	//host:port
+	@Parameter(names="--host")
+	private String host;
+	
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public List<String> getJars() {
+		return jars;
+	}
+
+	public void setJars(List<String> jars) {
+		this.jars = jars;
+	}
+
+	@Parameter(names="--jar")
+	private List<String> jars;
 
 	public int getNumberOfRuns() {
 		return numberOfRuns;
