@@ -16,6 +16,12 @@ import io.netty.util.internal.ThreadLocalRandom;
 
 public enum Exchange {
 	
+	NONE {
+		@Override
+		public DataSet<Path> exchange(DataSet<Path> generation) {
+			return generation;
+		}
+	},
 	COMPLETE_RANDOM {
 		@Override
 		public DataSet<Path> exchange(DataSet<Path> generation) {
