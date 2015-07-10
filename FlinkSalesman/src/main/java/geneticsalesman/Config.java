@@ -7,6 +7,9 @@ import com.beust.jcommander.Parameters;
 
 @Parameters(separators="=")
 public class Config {
+	@Parameter(names="--parallelism")
+	private int parallelism=1;
+	
 	@Parameter(names="--numberOfRuns")
 	private int numberOfRuns=1;
 	
@@ -77,5 +80,13 @@ public class Config {
 	
 	public int getGenerations() {
 		return generations;
+	}
+
+	public int getParallelism() {
+		return parallelism;
+	}
+
+	public void setParallelism(int parallelism) {
+		this.parallelism = parallelism;
 	}
 }

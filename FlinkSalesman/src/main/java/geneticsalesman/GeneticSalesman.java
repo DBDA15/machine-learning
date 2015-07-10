@@ -66,6 +66,8 @@ public class GeneticSalesman {
 					Integer.parseInt(h[1]), 
 					config.getJars().toArray(new String[config.getJars().size()]));
 		}
+		env = ExecutionEnvironment.createRemoteEnvironment("tenemhead2", 6123, "flink.jar");
+		env.setParallelism(config.getParallelism());
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
 		env.getConfig().disableSysoutLogging();
