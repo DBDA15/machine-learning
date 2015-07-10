@@ -19,13 +19,13 @@ public enum Exchange {
 	COMPLETE_RANDOM {
 		@Override
 		public DataSet<Path> exchange(DataSet<Path> generation) {
-			return generation.partitionByHash(new RandomSelector());
+			return generation.partitionByHash(new RandomSelector()).rebalance();
 		}
 	},
 	ROUND_ROBIN {
 		@Override
 		public DataSet<Path> exchange(DataSet<Path> generation) {
-			return generation.partitionByHash(new RoundRobinSelector());
+			return generation.partitionByHash(new RoundRobinSelector()).rebalance();
 		}
 	},
 	SELECTED_RANDOM {
@@ -50,14 +50,13 @@ public enum Exchange {
 				public boolean filter(Path value) throws Exception {
 					return value.getMark()==1;
 				}
-			});
-			marked=Exchange.ROUND_ROBIN.exchange(marked); //required or it will exchange nothing at all
+			}).partitionByHash(new RoundRobinSelector());
 			generation=generation.filter(new FilterFunction<Path>() {
 				@Override
 				public boolean filter(Path value) throws Exception {
 					return value.getMark()==0;
 				}
-			}).union(marked);
+			}).union(marked).rebalance();
 			return generation;
 		}
 	};
@@ -85,7 +84,10 @@ public enum Exchange {
 		private int id=0;
 		@Override
 		public Integer getKey(Path value) throws Exception {
-			return id++;
+			int ret=id++;
+			if(id==20)
+				id=0;
+			return ret;
 		}
 	}
 

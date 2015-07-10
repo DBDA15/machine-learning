@@ -20,7 +20,7 @@ public class Config {
 	private int populationSize=1000;
 	
 	@Parameter(names="--exchange")
-	private String exchange=Exchange.SELECTED_RANDOM.name();
+	private String exchange=Exchange.ROUND_ROBIN.name();
 	
 	@Parameter(required=true)
 	private List<String> problem;
