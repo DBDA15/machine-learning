@@ -32,7 +32,7 @@ public class GeneticSalesman {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException {
 		GenerationPopulationPair[] pairs = new GenerationPopulationPair[] {
-				new GenerationPopulationPair(20000, 5)
+				new GenerationPopulationPair(30000, 100)
 				//new GenerationPopulationPair(1600000, 5)
 		};
 		String outPath;
