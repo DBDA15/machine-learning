@@ -69,7 +69,7 @@ public class Path implements Serializable {
 	public static final Comparator<Path> COMPARATOR = new PathComparator();
 
 	public Path cross(Path p2, double[][] distances) {
-		int cuttingPoint=ThreadLocalRandom.current().nextInt(path.length);
+		int cuttingPoint=new Random().nextInt(path.length);
 		LinkedHashSet<Integer> set=new LinkedHashSet<>(path.length);
 		for(int i=0;i<cuttingPoint;i++)
 			set.add(path[i]);
@@ -114,7 +114,7 @@ public class Path implements Serializable {
 	}
 
 	public Path mutate(double[][] distances) {
-		Random r=ThreadLocalRandom.current();
+		Random r=new Random();
 		int[] newPath = Arrays.copyOf(path, path.length);
 		double newDistance = distance;
 		

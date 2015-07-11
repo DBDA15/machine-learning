@@ -4,23 +4,31 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.stream.Stream;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.MapPartitionFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
 
 import geneticsalesman.evolution.Evolution;
 import geneticsalesman.statistics.Statistics;
 import geneticsalesman.statistics.StatisticsAccumulator;
 import io.netty.util.internal.ThreadLocalRandom;
 
-public class GeneticSalesman {
+public class ExchangeTest {
 	
 	public static class GenerationPopulationPair{
 		public int generations;
@@ -66,8 +74,6 @@ public class GeneticSalesman {
 					Integer.parseInt(h[1]), 
 					config.getJars().toArray(new String[config.getJars().size()]));
 		}
-		env = ExecutionEnvironment.createRemoteEnvironment("tenemhead2", 6123, "flink.jar");
-		env.setParallelism(config.getParallelism());
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
 		env.getConfig().disableSysoutLogging();
@@ -78,19 +84,19 @@ public class GeneticSalesman {
 				.fromCollection(Evolution.generateRandomGeneration(config, problem.getSize(), problem.getDistances()))
 				.name("Generation 0")
 				.rebalance()
-				/*.mapPartition(new MapPartitionFunction<Path, Path>() {
+				.mapPartition(new MapPartitionFunction<Path, Path>() {
 
 					@Override
 					public void mapPartition(Iterable<Path> values, Collector<Path> out) throws Exception {
 						int partitionId=new Random().nextInt();
 						for(Path p:values) {
-							p.setPartitionId(partitionId);
+							p.setOriginalPartition(partitionId);
 							out.collect(p);
 						}
 						out.close();
 					}
 					
-				})*/;
+				});
 			long baseTime=System.currentTimeMillis();
 			out("Testrun "+testRun, writer);
 			
@@ -100,6 +106,20 @@ public class GeneticSalesman {
     		generation=Evolution.evolve(generation, config.getQuickGenerations(), problem.getDistances());
     		
     		generation=Evolution.exchange(config, generation);
+    		
+    		generation=generation.mapPartition(new MapPartitionFunction<Path, Path>() {
+
+				@Override
+				public void mapPartition(Iterable<Path> values, Collector<Path> out) throws Exception {
+					Multiset<Integer> partitionCounts=HashMultiset.create();
+					for(Path p:values) {
+						partitionCounts.add(p.getOriginalPartition());
+						out.collect(p);
+					}
+					LoggerFactory.getLogger(ExchangeTest.class).warn(partitionCounts.toString());
+					out.close();
+				}
+			});
 	    		
 	    	generation=iterationStart.closeWith(generation);
 
@@ -146,6 +166,6 @@ public class GeneticSalesman {
 	public static void out(String text, Writer writer) throws IOException {
 		writer.write(text + "\n");
 		writer.flush();
-		LoggerFactory.getLogger(GeneticSalesman.class).warn(text);
+		LoggerFactory.getLogger(ExchangeTest.class).warn(text);
 	}
 }

@@ -72,7 +72,7 @@ public class Evolver implements FlatMapFunction<Iterator<Path>, Path>, Serializa
 		}
 		
 		//cross new children
-		Random r=ThreadLocalRandom.current();
+		Random r=new Random();
 		ArrayList<Path> nextGeneration = new ArrayList<>(lastGen.size());
 		for(int i=0;i<lastGen.size()-1;i++) { //one less because of elite
 			nextGeneration.add(
