@@ -17,8 +17,17 @@ import com.esotericsoftware.kryo.io.Output;
 public class Path implements Comparable<Path>, Serializable {
 	private int[] path;
 	private double distance;
-	private int mark;
+	private boolean marked;
+	private int originalPartition;
 	
+	protected int getOriginalPartition() {
+		return originalPartition;
+	}
+
+	protected void setOriginalPartition(int originalPartition) {
+		this.originalPartition = originalPartition;
+	}
+
 	Path(int[] path, double distance) {
 		this.path=path;
 		this.distance=distance;
@@ -69,7 +78,9 @@ public class Path implements Comparable<Path>, Serializable {
 	public static final Comparator<Path> COMPARATOR = new PathComparator();
 
 	public Path cross(Path p2, double[][] distances) {
-		int cuttingPoint=ThreadLocalRandom.current().nextInt(path.length);
+		if(this.originalPartition!=p2.originalPartition)
+			System.out.println("AHAA");
+		int cuttingPoint=new Random().nextInt(path.length);
 		IntArrayList l=new IntArrayList(p2.path.length);
 		IntHashSet s=new IntHashSet(p2.path.length);
 		for(int i=0;i<cuttingPoint;i++) {
@@ -83,6 +94,7 @@ public class Path implements Comparable<Path>, Serializable {
 
 		int[] p=normalize(l.toArray());
 		Path np=new Path(p, calculateLength(p, distances));
+		np.originalPartition=originalPartition;
 		return np;
 	}
 	
@@ -120,7 +132,7 @@ public class Path implements Comparable<Path>, Serializable {
 	}
 
 	public Path mutate(double[][] distances) {
-		Random r=ThreadLocalRandom.current();
+		Random r=new Random();
 		int[] newPath = Arrays.copyOf(path, path.length);
 		double newDistance = distance;
 		
@@ -139,6 +151,7 @@ public class Path implements Comparable<Path>, Serializable {
 		}
 		newDistance = calculateLength(newPath, distances);
 		Path np=new Path(newPath, newDistance);
+		np.originalPartition=originalPartition;
 		return np;
 	}
 
@@ -208,12 +221,12 @@ public class Path implements Comparable<Path>, Serializable {
 		return newPath;
 	}
 
-	public int getMark() {
-		return mark;
+	public boolean isMarked() {
+		return marked;
 	}
 	
-	public void setMark(int mark) {
-		this.mark = mark;
+	public void setMarked(boolean marked) {
+		this.marked = marked;
 	}
 
 	public static Path createNormalizedPath(int[] p, double[][] distances) {
@@ -229,17 +242,19 @@ public class Path implements Comparable<Path>, Serializable {
 	public static class Serializer extends com.esotericsoftware.kryo.Serializer<Path>{
 		@Override
 		public void write(Kryo kryo, Output output, Path p) {
-			VariableByteEncoding.writeVNumber(output,  p.mark);
+			output.writeBoolean(p.marked);
 			output.writeDouble(p.distance);
 			VariableByteEncoding.writeVInts(output, p.path);
+			VariableByteEncoding.writeVNumber(output, p.originalPartition);
 		}
 
 		@Override
 		public Path read(Kryo kryo, Input input, Class<Path> type) {
-			int mark=VariableByteEncoding.readVInt(input);
+			boolean marked=input.readBoolean();
 			double dist=input.readDouble();
 			Path p=new Path(VariableByteEncoding.readVInts(input), dist);
-			p.mark=mark;
+			p.marked=marked;
+			p.originalPartition=VariableByteEncoding.readVInt(input);
 			return p;
 		}
 	}

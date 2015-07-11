@@ -41,12 +41,12 @@ public enum Exchange {
 				@Override
 				public void mapPartition(Iterable<Path> values, Collector<Path> out) {
 					List<Path> l=Lists.newArrayList(values);
-					Random r=ThreadLocalRandom.current();
+					Random r=new Random();
 					
 					for(Path p:l)
-						p.setMark(0);
+						p.setMarked(false);
 					for(int i=0;i<5;i++)
-						l.get(r.nextInt(l.size())).setMark(1);
+						l.get(r.nextInt(l.size())).setMarked(true);
 					for(Path p:l)
 						out.collect(p);
 				}
@@ -54,13 +54,13 @@ public enum Exchange {
 			DataSet<Path> marked = generation.filter(new FilterFunction<Path>() {
 				@Override
 				public boolean filter(Path value) throws Exception {
-					return value.getMark()==1;
+					return value.isMarked();
 				}
 			}).partitionByHash(new RoundRobinSelector());
 			generation=generation.filter(new FilterFunction<Path>() {
 				@Override
 				public boolean filter(Path value) throws Exception {
-					return value.getMark()==0;
+					return !value.isMarked();
 				}
 			}).union(marked).rebalance();
 			return generation;
@@ -77,7 +77,7 @@ public enum Exchange {
 		
 		@Override
 		public Integer getKey(Path value) throws Exception {
-			return ThreadLocalRandom.current().nextInt(20);
+			return new Random().nextInt(20);
 		}
 	}
 	public static class RoundRobinSelector implements KeySelector<Path, Integer>, Serializable {
