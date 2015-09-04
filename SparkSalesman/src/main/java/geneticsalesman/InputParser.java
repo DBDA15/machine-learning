@@ -85,7 +85,7 @@ public class InputParser implements Closeable {
 	private InputStream createInputStream(String fileName) throws IOException, URISyntaxException {
 		if(fileName.startsWith("hdfs://")) {
 			Configuration configuration = new Configuration();
-			FileSystem hdfs = FileSystem.get( new URI( "hdfs://tenemhead2" ), configuration );
+			FileSystem hdfs = FileSystem.get( getHost(fileName), configuration );
 			return hdfs.open(new org.apache.hadoop.fs.Path(fileName));
 		}
 		else
@@ -96,6 +96,10 @@ public class InputParser implements Closeable {
 	public void close() throws IOException {
 		if(fs!=null)
 			fs.close();
+	}
+	
+	public static URI getHost(String path) throws URISyntaxException {
+		return new URI(path.replace("hdfs://", "").split("/")[0]);
 	}
 
 }

@@ -10,69 +10,42 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.beust.jcommander.JCommander;
+
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 public class GeneticSalesman {
-	
-	private final static boolean TOURNAMENT_SHUFFLE = false;
-	private static final int NUMBER_OF_RUNS = 1;
-	private static final int QUICK_GENERATIONS = 100;
-	
-	public static class GenerationPopulationPair{
-		public int generations;
-		public int population;
-		public GenerationPopulationPair(int generations, int population) {
-			this.generations = generations;
-			this.population = population;
-		}
-	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException {
-		GenerationPopulationPair[] pairs = new GenerationPopulationPair[] {
-				new GenerationPopulationPair(30000, 100)
-				//new GenerationPopulationPair(1600000, 5)
-		};
-		String outPath;
-		if(args.length == 2)
-			outPath = args[1]+"/";
-		else
-			outPath = "";
-		try (BufferedWriter writer = Helper.Output.writer(outPath + "out.txt")) {
-			double[] resultPercentages = new double[pairs.length];
-			for(int i=0;i<pairs.length;i++) {
-				out("---STARTING WITH PAIR", writer);
-				resultPercentages[i]=run(args[0], outPath, pairs[i], writer);
-				out("---FINISHED!", writer);
-			}
-			out("generations,population,avgPercentage",writer);
-			for(int i=0;i<pairs.length;i++) {
-				out(pairs[i].generations+","+pairs[i].population+","+resultPercentages[i],writer);
-			}
+		Config config=new Config();
+		new JCommander(config, args);
+
+		try (BufferedWriter writer = Helper.Output.writer(config.getOutPath() + "out.txt")) {
+			double result = run(config, writer);
+			out("average percentage: "+result,writer);
 	    }
 	}
 
-	public static double run(String citiesFile, String outPath, GenerationPopulationPair pair, BufferedWriter writer) throws IOException, URISyntaxException {
-		Evolution.POPULATION_SIZE = pair.population;
-		// get job parameters
+	public static double run(Config config, BufferedWriter writer) throws IOException, URISyntaxException {
+		Evolution.POPULATION_SIZE = config.getPopulationSize();
 		Problem problem;
 		try(InputParser in=new InputParser()) {
-			problem=in.parse(citiesFile);
+			problem=in.parse(config.getProblem());
 		}
 		
-   
 		// initialize spark environment
-		SparkConf config = new SparkConf().setAppName(GeneticSalesman.class.getSimpleName()+" on "+(int)(Evolution.POPULATION_SIZE/Math.sqrt(problem.getSize()))+" @ "+citiesFile);
-		config.set("spark.hadoop.validateOutputSpecs", "false");
-		double[] results = new double[NUMBER_OF_RUNS];
+		SparkConf sparkConfig = new SparkConf().setAppName(GeneticSalesman.class.getSimpleName()+" on "+(int)(Evolution.POPULATION_SIZE/Math.sqrt(problem.getSize()))+" @ "+config.getProblem());
+		sparkConfig.set("spark.hadoop.validateOutputSpecs", "false");
+		double[] results = new double[config.getNumberOfRuns()];
 		
-		try(JavaSparkContext ctx = new JavaSparkContext(config)) {
+		try(JavaSparkContext ctx = new JavaSparkContext(sparkConfig)) {
 			
 			Broadcast<double[][]> distanceBroadcast = ctx.broadcast(problem.getDistances());
 				    		
-			for(int testRun=0;testRun<NUMBER_OF_RUNS;testRun++) {
+			for(int testRun=0;testRun<config.getNumberOfRuns();testRun++) {
 
 				JavaRDD<Path> generation = ctx.parallelize(Evolution.generateRandomGeneration(problem.getSize(), problem.getDistances()));
 				out("Testrun "+testRun, writer);
@@ -81,13 +54,13 @@ public class GeneticSalesman {
 		    	long time=System.nanoTime();
 		    	
 		    	//MAJOR LOOP THAT IS ALSO PRINTING STUFF
-		    	for(int generationNumber=0; generationNumber<=pair.generations; generationNumber+=QUICK_GENERATIONS) {
+		    	for(int generationNumber=0; generationNumber<=config.getGenerations(); generationNumber+=config.getQuickGenerations()) {
 		    		out("\tGeneration "+(generationNumber)+":", writer);
 		    		
 		    		
-		    		generation=Evolution.evolve(generation, QUICK_GENERATIONS, distanceBroadcast);
+		    		generation=Evolution.evolve(generation, config.getQuickGenerations(), distanceBroadcast);
 		    		
-		    		if(TOURNAMENT_SHUFFLE) {
+		    		if(config.isTournamentShuffle()) {
 		    			generation=Evolution.rouletteShuffle(generation, ctx);
 		    		}
 		    		else
@@ -110,14 +83,13 @@ public class GeneticSalesman {
 		    	}
 		    	results[testRun] = problem.getOptimal().getLength()/globalBest.getLength();
 		    	out("\tFound:\t"+globalBest, writer);
-		    	if(problem.getOptimal()!=null) {
+		    	
+				if(problem.getOptimal()!=null) {
 		    		out("\tOpt.:\t"+problem.getOptimal(), writer);
 		    		out("\tFound Length:\t"+(problem.getOptimal().getLength()/globalBest.getLength()), writer);
 		    	}
-		    	//out("\tRequired:\t"+progressOfTestRuns[testRun]+" ms", writer);
-		    	//export result
 		    	
-		    	try(BufferedWriter kmlWriter =  Helper.Output.writer(outPath + "out"+testRun+".kml")) { 
+		    	try(BufferedWriter kmlWriter =  Helper.Output.writer(config.getOutPath() + "out"+testRun+".kml")) { 
 		    		Helper.KMLExport.exportPath(globalBest, problem, kmlWriter);
 				}
 		    }

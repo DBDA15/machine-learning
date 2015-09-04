@@ -21,31 +21,12 @@ import geneticsalesman.statistics.StatisticsAccumulator;
 import io.netty.util.internal.ThreadLocalRandom;
 
 public class GeneticSalesman {
-	
-	public static class GenerationPopulationPair{
-		public int generations;
-		public int population;
-		public GenerationPopulationPair(int generations, int population) {
-			this.generations = generations;
-			this.population = population;
-		}
-	}
 
 	public static void main(String[] args) throws Exception {
 		System.out.println(Arrays.toString(args));
 		Config config=new Config();
 		new JCommander(config, args);
 		try (BufferedWriter writer = Helper.Output.writer(config.getOutFile())) {
-			//double[] resultPercentages = new double[pairs.length];
-			/*for(int i=0;i<pairs.length;i++) {
-				out("---STARTING WITH PAIR", writer);
-				resultPercentages[i]=run(config, writer);
-				out("---FINISHED!", writer);
-			}
-			out("generations,population,avgPercentage",writer);
-			for(int i=0;i<pairs.length;i++) {
-				out(pairs[i].generations+","+pairs[i].population+","+resultPercentages[i],writer);
-			}*/
 			run(config, writer);
 	    }
 	}
@@ -66,7 +47,6 @@ public class GeneticSalesman {
 					Integer.parseInt(h[1]), 
 					config.getJars().toArray(new String[config.getJars().size()]));
 		}
-		env = ExecutionEnvironment.createRemoteEnvironment("tenemhead2", 6123, "flink.jar");
 		env.setParallelism(config.getParallelism());
 		env.addDefaultKryoSerializer(Path.class, Path.Serializer.class);
 		env.addDefaultKryoSerializer(Statistics.class, Statistics.Serializer.class);
@@ -77,20 +57,7 @@ public class GeneticSalesman {
 			DataSet<Path> generation = env
 				.fromCollection(Evolution.generateRandomGeneration(config, problem.getSize(), problem.getDistances()))
 				.name("Generation 0")
-				.rebalance()
-				/*.mapPartition(new MapPartitionFunction<Path, Path>() {
-
-					@Override
-					public void mapPartition(Iterable<Path> values, Collector<Path> out) throws Exception {
-						int partitionId=new Random().nextInt();
-						for(Path p:values) {
-							p.setPartitionId(partitionId);
-							out.collect(p);
-						}
-						out.close();
-					}
-					
-				})*/;
+				.rebalance();
 			long baseTime=System.currentTimeMillis();
 			out("Testrun "+testRun, writer);
 			
@@ -104,7 +71,6 @@ public class GeneticSalesman {
 	    	generation=iterationStart.closeWith(generation);
 
 	    	generation.reduce(MinReduce.getInstance()).printOnTaskManager("BEST:\t");
-	    	//results[testRun] = problem.getOptimal().getLength()/globalBest.getLength();
 	    	JobExecutionResult res=env.execute("Genetic Salesman "+config.getQuickGenerations()+" quick generations");
 	    	
 	    	Statistics result=(Statistics)res.getAccumulatorResult(StatisticsAccumulator.NAME);

@@ -123,7 +123,7 @@ public interface Helper {
 			OutputStream os;
 			if(path.startsWith("hdfs")) {
 				Configuration configuration = new Configuration();
-				FileSystem hdfs = FileSystem.get( new URI( "hdfs://tenemhead2" ), configuration );
+				FileSystem hdfs = FileSystem.get( InputParser.getHost(path), configuration );
 				org.apache.hadoop.fs.Path file = new org.apache.hadoop.fs.Path(path);
 				if ( hdfs.exists( file )) { hdfs.delete( file, true ); } 
 				os = hdfs.create(file);
